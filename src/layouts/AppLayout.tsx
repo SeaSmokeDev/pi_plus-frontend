@@ -15,7 +15,7 @@ export default function AppLayout() {
         <Sidebar />
 
         {/* Contenido principal */}
-        <div className="flex-grow-1 d-flex flex-column">
+        <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
           <main className="flex-grow-1">
             <Outlet />
           </main>
