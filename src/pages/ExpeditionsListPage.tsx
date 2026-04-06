@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsList from "../components/expeditions/ExpeditionsList";
@@ -89,6 +90,7 @@ export default function ExpeditionsListPage() {
   const [searchValue, setSearchValue] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const filteredExpeditions = useMemo(() => {
     return todayExpeditionsMock.filter((expedition) => {
@@ -142,7 +144,11 @@ export default function ExpeditionsListPage() {
       </section>
 
       <div className="d-flex justify-content-end">
-        <button type="button" className="btn btn-primary">
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
           Nueva expedicion
         </button>
       </div>
@@ -170,6 +176,11 @@ export default function ExpeditionsListPage() {
 
         <ExpeditionsList expeditions={filteredExpeditions} />
       </section>
+
+      <CreateExpeditionModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 }
