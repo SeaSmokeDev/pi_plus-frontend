@@ -70,7 +70,7 @@ export default function Sidebar() {
           <NavItem to="/search" icon="search" label="Búsqueda por SN" />
           <NavItem to="/terminal-form" icon="inventory_2" label="Ficha Equipo" />
           <NavItem to="/stock" icon="map" label="Mapa Almacén" />
-          <NavItem to="/#" icon="list_alt" label="Listado Órdenes" />
+          <NavItem to="/expeditions" icon="list_alt" label="Expediciones" />
         </nav>
 
         <div className="mt-auto d-grid gap-2">
