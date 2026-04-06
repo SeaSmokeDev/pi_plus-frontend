@@ -47,7 +47,7 @@ export default function Sidebar() {
   return (
     <aside
       className="border-end bg-light p-3 flex-shrink-0"
-      style={{ width: "300px", minWidth: "300px" }}
+      style={{ width: "250px", minWidth: "250px" }}
     >
       <div className="d-flex flex-column gap-4 h-100">
         <div className="d-flex align-items-center gap-3">
