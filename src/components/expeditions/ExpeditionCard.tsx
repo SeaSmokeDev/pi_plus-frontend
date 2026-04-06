@@ -2,6 +2,7 @@ import type { Expedition } from "./types";
 
 type ExpeditionCardProps = {
   expedition: Expedition;
+  onEdit?: (expedition: Expedition) => void;
 };
 
 function formatStatusLabel(status: Expedition["status"]): string {
@@ -20,7 +21,7 @@ function getStatusClassName(status: Expedition["status"]): string {
   return "bg-primary-subtle text-primary-emphasis";
 }
 
-export default function ExpeditionCard({ expedition }: ExpeditionCardProps) {
+export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardProps) {
   const canEdit = expedition.status === "abierta";
 
   return (
@@ -34,7 +35,11 @@ export default function ExpeditionCard({ expedition }: ExpeditionCardProps) {
 
           <div className="d-flex align-items-start gap-2">
             {canEdit && (
-              <button type="button" className="btn btn-sm btn-outline-primary">
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => onEdit?.(expedition)}
+              >
                 Editar
               </button>
             )}

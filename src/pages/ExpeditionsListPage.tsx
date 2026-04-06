@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
+import { todayExpeditionsMock } from "../components/expeditions/mockData";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsList from "../components/expeditions/ExpeditionsList";
 import type { Expedition, ExpeditionFilters } from "../components/expeditions/types";
@@ -8,72 +10,6 @@ import type { Expedition, ExpeditionFilters } from "../components/expeditions/ty
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
 }).format(new Date());
-
-const todayExpeditionsMock: Expedition[] = [
-  {
-    id: 1,
-    expeditionNumber: "EXP-2026-041",
-    assignedTo: "Ian Tauzy",
-    destination: "Madrid",
-    sentDate: "2026-04-06",
-    receivedDate: null,
-    status: "en_transito",
-  },
-  {
-    id: 2,
-    expeditionNumber: "EXP-2026-042",
-    assignedTo: "Alba Panato",
-    destination: "Valencia",
-    sentDate: "2026-04-06",
-    receivedDate: "2026-04-06",
-    status: "abierta",
-  },
-  {
-    id: 3,
-    expeditionNumber: "EXP-2026-043",
-    assignedTo: "Marta Soler",
-    destination: "Sevilla",
-    sentDate: "2026-04-06",
-    receivedDate: null,
-    status: "en_transito",
-  },
-  {
-    id: 4,
-    expeditionNumber: "EXP-2026-044",
-    assignedTo: "David Rico",
-    destination: "Barcelona",
-    sentDate: "2026-04-06",
-    receivedDate: "2026-04-06",
-    status: "recibida",
-  },
-  {
-    id: 5,
-    expeditionNumber: "EXP-2026-045",
-    assignedTo: "Lucia Torres",
-    destination: "Bilbao",
-    sentDate: "2026-04-06",
-    receivedDate: null,
-    status: "abierta",
-  },
-  {
-    id: 6,
-    expeditionNumber: "EXP-2026-046",
-    assignedTo: "Sergio Marin",
-    destination: "Malaga",
-    sentDate: "2026-04-06",
-    receivedDate: null,
-    status: "en_transito",
-  },
-  {
-    id: 7,
-    expeditionNumber: "EXP-2026-047",
-    assignedTo: "Claudia Perez",
-    destination: "Alicante",
-    sentDate: "2026-04-06",
-    receivedDate: "2026-04-06",
-    status: "recibida",
-  },
-];
 
 const emptyFilters: ExpeditionFilters = {
   sentDate: "",
@@ -87,6 +23,7 @@ function normalizeText(value: string): string {
 }
 
 export default function ExpeditionsListPage() {
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
@@ -174,12 +111,19 @@ export default function ExpeditionsListPage() {
           </div>
         </div>
 
-        <ExpeditionsList expeditions={filteredExpeditions} />
+        <ExpeditionsList
+          expeditions={filteredExpeditions}
+          onEdit={(expedition: Expedition) => navigate(`/expeditions/${expedition.id}/edit`)}
+        />
       </section>
 
       <CreateExpeditionModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        onContinue={() => {
+          setIsCreateModalOpen(false);
+          navigate("/expeditions/new");
+        }}
       />
     </div>
   );

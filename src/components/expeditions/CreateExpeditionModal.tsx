@@ -3,6 +3,7 @@ import { useState } from "react";
 type CreateExpeditionModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  onContinue: () => void;
 };
 
 type FormState = {
@@ -42,8 +43,10 @@ const destinationInfo = {
 export default function CreateExpeditionModal({
   isOpen,
   onClose,
+  onContinue,
 }: CreateExpeditionModalProps) {
   const [form, setForm] = useState<FormState>(initialFormState);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   if (!isOpen) {
     return null;
@@ -55,11 +58,18 @@ export default function CreateExpeditionModal({
 
   const handleCancel = () => {
     setForm(initialFormState);
+    setShowConfirmation(false);
     onClose();
   };
 
   const handleSave = () => {
-    onClose();
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmContinue = () => {
+    setForm(initialFormState);
+    setShowConfirmation(false);
+    onContinue();
   };
 
   return (
@@ -235,7 +245,7 @@ export default function CreateExpeditionModal({
 
             <div className="modal-footer justify-content-center">
               <button type="button" className="btn btn-success px-4" onClick={handleSave}>
-                Guardar
+                Crear
               </button>
               <button type="button" className="btn btn-outline-secondary px-4" onClick={handleCancel}>
                 Cancelar
@@ -244,6 +254,65 @@ export default function CreateExpeditionModal({
           </div>
         </div>
       </div>
+
+      {showConfirmation && (
+        <>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1060 }} />
+          <div
+            className="modal d-block"
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            style={{ zIndex: 1070 }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow">
+                <div className="modal-header">
+                  <h3 className="modal-title h5 mb-0">Confirmar origen y destino</h3>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Cerrar"
+                    onClick={() => setShowConfirmation(false)}
+                  />
+                </div>
+
+                <div className="modal-body">
+                  <p className="mb-3">
+                    Confirma que el origen y el destino son correctos. Despues no se podran cambiar.
+                  </p>
+
+                  <div className="rounded-3 bg-light border px-3 py-3 d-flex flex-column gap-2">
+                    <div>
+                      <span className="fw-semibold">Origen:</span> {form.origin}
+                    </div>
+                    <div>
+                      <span className="fw-semibold">Destino:</span> {form.destination}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowConfirmation(false)}
+                  >
+                    Revisar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleConfirmContinue}
+                  >
+                    Confirmar y continuar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
