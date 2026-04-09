@@ -45,7 +45,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="border-end bg-light p-3" style={{ width: "300px" }}>
+    <aside
+      className="border-end bg-light p-3 flex-shrink-0"
+      style={{ width: "250px", minWidth: "250px" }}
+    >
       <div className="d-flex flex-column gap-4 h-100">
         <div className="d-flex align-items-center gap-3">
           <div
@@ -70,7 +73,7 @@ export default function Sidebar() {
           <NavItem to="/search" icon="search" label="Búsqueda por SN" />
           <NavItem to="/terminal-form" icon="inventory_2" label="Ficha Equipo" />
           <NavItem to="/stock" icon="map" label="Mapa Almacén" />
-          <NavItem to="/#" icon="list_alt" label="Listado Órdenes" />
+          <NavItem to="/expeditions" icon="list_alt" label="Expediciones" />
         </nav>
 
         <div className="mt-auto d-grid gap-2">

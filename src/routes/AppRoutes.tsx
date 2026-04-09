@@ -7,6 +7,8 @@ import SNSearchPage from "../pages/SNSearchPage";
 import StockUbicationPage from "../pages/StockUbicationPage";
 import TerminalFormPage from "../pages/TerminalFormPage";
 import RequireAuth from "./RequireAuth";
+import ExpeditionDetailPage from "../pages/ExpeditionDetailPage";
+import ExpeditionsListPage from "../pages/ExpeditionsListPage";
 
 export default function AppRoutes() {
   return (
@@ -22,6 +24,9 @@ export default function AppRoutes() {
           <Route path="/search" element={<SNSearchPage />} />
           <Route path="/stock" element={<StockUbicationPage />} />
           <Route path="/terminal-form" element={<TerminalFormPage />} />
+          <Route path="/expeditions" element={<ExpeditionsListPage />} />
+          <Route path="/expeditions/new" element={<ExpeditionDetailPage />} />
+          <Route path="/expeditions/:expeditionId/edit" element={<ExpeditionDetailPage />} />
         </Route>
       </Route>
     </Routes>
