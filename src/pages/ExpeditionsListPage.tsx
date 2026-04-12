@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
@@ -6,6 +6,8 @@ import { todayExpeditionsMock } from "../components/expeditions/mockData";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsList from "../components/expeditions/ExpeditionsList";
 import type { Expedition, ExpeditionFilters } from "../components/expeditions/types";
+
+const [expediciones, setExpediciones] = useState<Expedition[]>([]);
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
@@ -18,6 +20,20 @@ const emptyFilters: ExpeditionFilters = {
   destination: "",
 };
 
+const allExpeditions = async () => {
+  try {
+    const data = await fetch("http://localhost:8080/bdproyecto/api/expediciones");
+    if (!data.ok) {
+      throw new Error("Error fetching expeditions");
+    }
+    const expedicionesData = (await data.json()) as Expedition[];
+    setExpediciones(expedicionesData);
+    console.log("Expediciones cargadas:", expedicionesData);
+  } catch (error) {
+    console.error("Error fetching expeditions:", error);
+  }
+}
+
 function normalizeText(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -28,6 +44,10 @@ export default function ExpeditionsListPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    allExpeditions();
+  }, []);
 
   const filteredExpeditions = useMemo(() => {
     return todayExpeditionsMock.filter((expedition) => {
