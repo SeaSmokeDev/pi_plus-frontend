@@ -7,8 +7,6 @@ import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsList from "../components/expeditions/ExpeditionsList";
 import type { Expedition, ExpeditionFilters } from "../components/expeditions/types";
 
-const [expediciones, setExpediciones] = useState<Expedition[]>([]);
-
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
 }).format(new Date());
@@ -20,20 +18,6 @@ const emptyFilters: ExpeditionFilters = {
   destination: "",
 };
 
-const allExpeditions = async () => {
-  try {
-    const data = await fetch("http://localhost:8080/bdproyecto/api/expediciones");
-    if (!data.ok) {
-      throw new Error("Error fetching expeditions");
-    }
-    const expedicionesData = (await data.json()) as Expedition[];
-    setExpediciones(expedicionesData);
-    console.log("Expediciones cargadas:", expedicionesData);
-  } catch (error) {
-    console.error("Error fetching expeditions:", error);
-  }
-}
-
 function normalizeText(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -44,6 +28,21 @@ export default function ExpeditionsListPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [expediciones, setExpediciones] = useState([]);
+
+  const allExpeditions = async () => {
+  try {
+    const data = await fetch("http://localhost:8080/bdproyecto/api/expediciones");
+    if (!data.ok) {
+      throw new Error("Error fetching expeditions");
+    }
+    const expedicionesData = (await data.json());
+    setExpediciones(expedicionesData);
+    console.log("Expediciones cargadas:", expedicionesData);
+  } catch (error) {
+    console.error("Error fetching expeditions:", error);
+  }
+}
 
   useEffect(() => {
     allExpeditions();
@@ -124,7 +123,7 @@ export default function ExpeditionsListPage() {
       <section className="d-flex flex-column gap-3">
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
           <div>
-            <h2 className="h5 fw-bold mb-1">Expediciones visibles</h2>
+            <h2 className="h5 fw-bold mb-1">Expediciones visibles de hoy</h2>
             <p className="text-muted mb-0">
               {filteredExpeditions.length} expedicion{filteredExpeditions.length === 1 ? "" : "es"} encontrada{filteredExpeditions.length === 1 ? "" : "s"}.
             </p>
