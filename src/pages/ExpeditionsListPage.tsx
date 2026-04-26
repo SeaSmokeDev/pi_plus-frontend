@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
@@ -28,25 +28,26 @@ export default function ExpeditionsListPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [expediciones, setExpediciones] = useState([]);
+//   const [expediciones, setExpediciones] = useState([]);
+//   const [loading, setLoading] = useState(true);
 
-  const allExpeditions = async () => {
-  try {
-    const data = await fetch("http://localhost:8080/bdproyecto/api/expediciones");
-    if (!data.ok) {
-      throw new Error("Error fetching expeditions");
-    }
-    const expedicionesData = (await data.json());
-    setExpediciones(expedicionesData);
-    console.log("Expediciones cargadas:", expedicionesData);
-  } catch (error) {
-    console.error("Error fetching expeditions:", error);
-  }
-}
+//   const allExpeditions = async () => {
+//   try {
+//     const data = await fetch("http://localhost:8080/bdproyecto/api/expediciones");
+//     if (!data.ok) {
+//       throw new Error("Error fetching expeditions");
+//     }
+//     const expedicionesData = (await data.json());
+//     setExpediciones(expedicionesData);
+//     console.log("Expediciones cargadas:", expedicionesData);
+//   } catch (error) {
+//     console.error("Error fetching expeditions:", error);
+//   }
+// }
 
-  useEffect(() => {
-    allExpeditions();
-  }, []);
+//   useEffect(() => {
+//     allExpeditions();
+//   }, []);
 
   const filteredExpeditions = useMemo(() => {
     return todayExpeditionsMock.filter((expedition) => {

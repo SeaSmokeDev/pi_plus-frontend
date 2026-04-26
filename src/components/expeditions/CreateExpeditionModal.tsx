@@ -90,9 +90,9 @@ export default function CreateExpeditionModal({
 
             <div className="modal-body p-4">
               <div className="row g-4">
-                <div className="col-12 col-lg-6">
+                {/* <div className="col-12 col-lg-6">
                   <label htmlFor="origin-type" className="form-label fw-semibold">
-                    Tipo Origen
+                    Origen
                   </label>
                   <select
                     id="origin-type"
@@ -104,7 +104,7 @@ export default function CreateExpeditionModal({
                     <option>Tienda</option>
                     <option>Delegacion</option>
                   </select>
-                </div>
+                </div> */}
 
                 <div className="col-12 col-lg-6">
                   <label htmlFor="origin" className="form-label fw-semibold">
