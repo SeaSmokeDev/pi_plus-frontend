@@ -16,6 +16,14 @@ export interface Expedition {
   estado: ExpeditionStatus;
 }
 
+export interface ExpeditionFilters {
+  fechaCreacion: ApiDate;
+  fechaRecepcion: ApiDate;
+  userId: ID;
+  direccionDestino: string;
+  estado: ExpeditionStatus | "";
+}
+
 export interface CreateExpeditionRequest {
   direccionDestino: string;
   paquetes?: number | null;
