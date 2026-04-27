@@ -2,20 +2,21 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
-import { todayExpeditionsMock } from "../components/expeditions/mockData";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsList from "../components/expeditions/ExpeditionsList";
-import type { Expedition, ExpeditionFilters } from "../components/expeditions/types";
+import { useExpeditions } from "../hooks/useExpeditions";
+import type { Expedition, ExpeditionFilters } from "../types";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
 }).format(new Date());
 
 const emptyFilters: ExpeditionFilters = {
-  sentDate: "",
-  receivedDate: "",
-  assignedTo: "",
-  destination: "",
+  fechaCreacion: "",
+  fechaRecepcion: "",
+  userId: 0,
+  direccionDestino: "",
+  estado: "",
 };
 
 function normalizeText(value: string): string {
@@ -28,50 +29,27 @@ export default function ExpeditionsListPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-//   const [expediciones, setExpediciones] = useState([]);
-//   const [loading, setLoading] = useState(true);
 
-//   const allExpeditions = async () => {
-//   try {
-//     const data = await fetch("http://localhost:8080/bdproyecto/api/expediciones");
-//     if (!data.ok) {
-//       throw new Error("Error fetching expeditions");
-//     }
-//     const expedicionesData = (await data.json());
-//     setExpediciones(expedicionesData);
-//     console.log("Expediciones cargadas:", expedicionesData);
-//   } catch (error) {
-//     console.error("Error fetching expeditions:", error);
-//   }
-// }
-
-//   useEffect(() => {
-//     allExpeditions();
-//   }, []);
+  const {
+    expeditions,
+    loading,
+    error,
+    
+  } = useExpeditions();
 
   const filteredExpeditions = useMemo(() => {
-    return todayExpeditionsMock.filter((expedition) => {
-      const matchesNumber = normalizeText(expedition.expeditionNumber).includes(normalizeText(searchValue));
-      const matchesSentDate =
-        !filters.sentDate || expedition.sentDate === filters.sentDate;
-      const matchesReceivedDate =
-        !filters.receivedDate || expedition.receivedDate === filters.receivedDate;
-      const matchesAssignedTo =
-        !filters.assignedTo ||
-        normalizeText(expedition.assignedTo).includes(normalizeText(filters.assignedTo));
-      const matchesDestination =
-        !filters.destination ||
-        normalizeText(expedition.destination).includes(normalizeText(filters.destination));
+    return expeditions.filter((expedition) => {
+      const matchesSentDate = !filters.fechaCreacion || expedition.fechaCreacion === filters.fechaCreacion;
+      const matchesReceivedDate = !filters.fechaRecepcion || expedition.fechaRecepcion === filters.fechaRecepcion;
+      const matchesAssignedTo = !filters.userId || expedition.usuarioId === filters.userId;
+      const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
 
-      return (
-        matchesNumber &&
-        matchesSentDate &&
-        matchesReceivedDate &&
-        matchesAssignedTo &&
-        matchesDestination
-      );
+      return matchesSentDate && matchesReceivedDate && matchesAssignedTo && matchesDestination;
     });
-  }, [filters, searchValue]);
+  }, [filters, searchValue, expeditions]);
+
+  if(loading) return <div className="container p-4">Cargando expediciones...</div>;
+  if(error) return <div className="container p-4 text-danger">Error: {error}</div>;
 
   const handleFilterChange = (field: keyof ExpeditionFilters, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));

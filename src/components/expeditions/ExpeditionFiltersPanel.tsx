@@ -1,4 +1,4 @@
-import type { ExpeditionFilters } from "./types";
+import type { ExpeditionFilters } from "../../types";
 
 type ExpeditionFiltersPanelProps = {
   filters: ExpeditionFilters;
@@ -26,8 +26,8 @@ export default function ExpeditionFiltersPanel({
               id="filter-sent-date"
               type="date"
               className="form-control"
-              value={filters.sentDate}
-              onChange={(event) => onFilterChange("sentDate", event.target.value)}
+              value={filters.fechaCreacion}
+              onChange={(event) => onFilterChange("fechaCreacion", event.target.value)}
             />
           </div>
 
@@ -39,8 +39,8 @@ export default function ExpeditionFiltersPanel({
               id="filter-received-date"
               type="date"
               className="form-control"
-              value={filters.receivedDate}
-              onChange={(event) => onFilterChange("receivedDate", event.target.value)}
+              value={filters.fechaRecepcion}
+              onChange={(event) => onFilterChange("fechaRecepcion", event.target.value)}
             />
           </div>
 
@@ -53,8 +53,8 @@ export default function ExpeditionFiltersPanel({
               type="text"
               className="form-control"
               placeholder="Ej: Alba Panato"
-              value={filters.assignedTo}
-              onChange={(event) => onFilterChange("assignedTo", event.target.value)}
+              value={filters.userId}
+              onChange={(event) => onFilterChange("userId", event.target.value)}
             />
           </div>
 
@@ -67,8 +67,8 @@ export default function ExpeditionFiltersPanel({
               type="text"
               className="form-control"
               placeholder="Ej: Madrid"
-              value={filters.destination}
-              onChange={(event) => onFilterChange("destination", event.target.value)}
+              value={filters.direccionDestino}
+              onChange={(event) => onFilterChange("direccionDestino", event.target.value)}
             />
           </div>
         </div>

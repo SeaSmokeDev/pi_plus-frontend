@@ -1,5 +1,5 @@
 import ExpeditionCard from "./ExpeditionCard";
-import type { Expedition } from "./types";
+import type { Expedition } from "../../types";
 
 type ExpeditionsListProps = {
   expeditions: Expedition[];
