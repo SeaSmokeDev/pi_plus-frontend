@@ -1,4 +1,4 @@
-import type { Expedition } from "./types";
+import type { Expedition } from "../../types";
 
 type ExpeditionCardProps = {
   expedition: Expedition;
