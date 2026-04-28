@@ -1,5 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL;
-
+console.log("API URL:", API_URL);
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -9,6 +9,7 @@ export async function apiRequest<T>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+    credentials: "include",
     ...options,
   });
 

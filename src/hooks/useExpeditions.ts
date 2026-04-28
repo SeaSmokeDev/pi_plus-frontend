@@ -13,8 +13,10 @@ export function useExpeditions() {
             setError(null);
             const data = await getExpeditionsToday();
             setExpeditions(data);
+            console.log("Expeditions loaded:", data);
         } catch {
             setError("Error al cargar las expediciones");
+            console.error("Error fetching expeditions:", error);
         } finally {
             setLoading(false);
         }
