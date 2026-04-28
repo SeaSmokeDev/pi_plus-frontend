@@ -39,12 +39,16 @@ export default function ExpeditionsListPage() {
 
   const filteredExpeditions = useMemo(() => {
     return expeditions.filter((expedition) => {
+      const matchesSearchValue =
+        !searchValue ||
+        String(expedition.id).includes(searchValue.trim()) ||
+        normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue));
       const matchesSentDate = !filters.fechaCreacion || expedition.fechaCreacion === filters.fechaCreacion;
       const matchesReceivedDate = !filters.fechaRecepcion || expedition.fechaRecepcion === filters.fechaRecepcion;
       const matchesAssignedTo = !filters.userId || expedition.usuarioId === filters.userId;
       const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
 
-      return matchesSentDate && matchesReceivedDate && matchesAssignedTo && matchesDestination;
+      return matchesSearchValue && matchesSentDate && matchesReceivedDate && matchesAssignedTo && matchesDestination;
     });
   }, [filters, searchValue, expeditions]);
 
@@ -52,7 +56,10 @@ export default function ExpeditionsListPage() {
   if(error) return <div className="container p-4 text-danger">Error: {error}</div>;
 
   const handleFilterChange = (field: keyof ExpeditionFilters, value: string) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
+    setFilters((prev) => ({
+      ...prev,
+      [field]: field === "userId" ? (value === "" ? 0 : Number(value)) : value,
+    }));
   };
 
   return (

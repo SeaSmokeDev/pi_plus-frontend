@@ -50,9 +50,9 @@ export default function ExpeditionFiltersPanel({
             </label>
             <input
               id="filter-assigned-user"
-              type="text"
+              type="number"
               className="form-control"
-              placeholder="Ej: Alba Panato"
+              placeholder="Ej: 2"
               value={filters.userId}
               onChange={(event) => onFilterChange("userId", event.target.value)}
             />

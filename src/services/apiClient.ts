@@ -1,10 +1,10 @@
-const API_URL = import.meta.env.VITE_API_URL;
-console.log("API URL:", API_URL);
+import { apiUrl } from "../auth/session";
+
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(apiUrl(endpoint), {
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
@@ -15,6 +15,10 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     throw new Error(`Error HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json();
