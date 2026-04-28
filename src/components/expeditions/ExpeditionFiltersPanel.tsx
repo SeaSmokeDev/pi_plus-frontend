@@ -1,14 +1,31 @@
-import type { ExpeditionFilters } from "../../types";
+import { useMemo, useState } from "react";
+import type { ExpeditionFilters, SecurityUser } from "../../types";
 
 type ExpeditionFiltersPanelProps = {
   filters: ExpeditionFilters;
+  users: SecurityUser[];
+  loadingUsers?: boolean;
   onFilterChange: (field: keyof ExpeditionFilters, value: string) => void;
 };
 
+const USER_RESULTS_LIMIT = 5;
+
 export default function ExpeditionFiltersPanel({
   filters,
+  users,
+  loadingUsers = false,
   onFilterChange,
 }: ExpeditionFiltersPanelProps) {
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  const filteredUsers = useMemo(() => {
+    const normalized = filters.username.trim().toLowerCase();
+
+    return users
+      .filter((user) => user.username.toLowerCase().includes(normalized))
+      .slice(0, USER_RESULTS_LIMIT);
+  }, [filters.username, users]);
+
   return (
     <div className="card border-0 shadow-sm">
       <div className="card-body">
@@ -20,7 +37,7 @@ export default function ExpeditionFiltersPanel({
         <div className="row g-3">
           <div className="col-12 col-md-6 col-xl-3">
             <label htmlFor="filter-sent-date" className="form-label">
-              Fecha enviada
+              Fecha creada
             </label>
             <input
               id="filter-sent-date"
@@ -44,18 +61,58 @@ export default function ExpeditionFiltersPanel({
             />
           </div>
 
-          <div className="col-12 col-md-6 col-xl-3">
+          <div className="col-12 col-md-6 col-xl-3 position-relative">
             <label htmlFor="filter-assigned-user" className="form-label">
               Usuario asignado
             </label>
             <input
               id="filter-assigned-user"
-              type="number"
+              type="text"
               className="form-control"
-              placeholder="Ej: 2"
-              value={filters.userId}
-              onChange={(event) => onFilterChange("userId", event.target.value)}
+              placeholder="Buscar por username"
+              value={filters.username}
+              onFocus={() => setIsUserDropdownOpen(true)}
+              onBlur={() => {
+                window.setTimeout(() => setIsUserDropdownOpen(false), 150);
+              }}
+              onChange={(event) => {
+                onFilterChange("username", event.target.value);
+                setIsUserDropdownOpen(true);
+              }}
             />
+
+            {isUserDropdownOpen && (
+              <div
+                className="position-absolute start-0 end-0 mt-1 bg-white border rounded-3 shadow-sm overflow-auto"
+                style={{ zIndex: 20, maxHeight: "220px" }}
+              >
+                {loadingUsers && (
+                  <div className="px-3 py-2 text-muted small">Cargando usuarios...</div>
+                )}
+
+                {!loadingUsers && filteredUsers.length === 0 && (
+                  <div className="px-3 py-2 text-muted small">
+                    No hay usuarios que coincidan.
+                  </div>
+                )}
+
+                {!loadingUsers &&
+                  filteredUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      className="dropdown-item px-3 py-2"
+                      onMouseDown={() => {
+                        onFilterChange("username", user.username);
+                        setIsUserDropdownOpen(false);
+                      }}
+                    >
+                      <div className="fw-semibold">{user.username}</div>
+                      <div className="small text-muted">{user.email}</div>
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
 
           <div className="col-12 col-md-6 col-xl-3">

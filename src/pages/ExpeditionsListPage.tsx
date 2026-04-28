@@ -5,6 +5,7 @@ import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersP
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsList from "../components/expeditions/ExpeditionsList";
 import { useExpeditions } from "../hooks/useExpeditions";
+import { useSecurityUsers } from "../hooks/useSecurityUsers";
 import type { Expedition, ExpeditionFilters } from "../types";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
@@ -14,7 +15,7 @@ const todayLabel = new Intl.DateTimeFormat("es-ES", {
 const emptyFilters: ExpeditionFilters = {
   fechaCreacion: "",
   fechaRecepcion: "",
-  userId: 0,
+  username: "",
   direccionDestino: "",
   estado: "",
 };
@@ -34,8 +35,8 @@ export default function ExpeditionsListPage() {
     expeditions,
     loading,
     error,
-    
   } = useExpeditions();
+  const { users, loading: loadingUsers } = useSecurityUsers();
 
   const filteredExpeditions = useMemo(() => {
     return expeditions.filter((expedition) => {
@@ -45,21 +46,22 @@ export default function ExpeditionsListPage() {
         normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue));
       const matchesSentDate = !filters.fechaCreacion || expedition.fechaCreacion === filters.fechaCreacion;
       const matchesReceivedDate = !filters.fechaRecepcion || expedition.fechaRecepcion === filters.fechaRecepcion;
-      const matchesAssignedTo = !filters.userId || expedition.usuarioId === filters.userId;
+      const matchedUser = users.find(
+        (user) => user.username.toLowerCase() === filters.username.trim().toLowerCase()
+      );
+      const matchesAssignedTo =
+        !filters.username || (matchedUser ? expedition.usuarioId === matchedUser.usuarioId : false);
       const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
 
       return matchesSearchValue && matchesSentDate && matchesReceivedDate && matchesAssignedTo && matchesDestination;
     });
-  }, [filters, searchValue, expeditions]);
+  }, [filters, searchValue, expeditions, users]);
 
   if(loading) return <div className="container p-4">Cargando expediciones...</div>;
   if(error) return <div className="container p-4 text-danger">Error: {error}</div>;
 
   const handleFilterChange = (field: keyof ExpeditionFilters, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: field === "userId" ? (value === "" ? 0 : Number(value)) : value,
-    }));
+    setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -103,7 +105,12 @@ export default function ExpeditionsListPage() {
       />
 
       {showAdvancedFilters && (
-        <ExpeditionFiltersPanel filters={filters} onFilterChange={handleFilterChange} />
+        <ExpeditionFiltersPanel
+          filters={filters}
+          users={users}
+          loadingUsers={loadingUsers}
+          onFilterChange={handleFilterChange}
+        />
       )}
 
       <section className="d-flex flex-column gap-3">
