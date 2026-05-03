@@ -36,28 +36,54 @@ export default function ExpeditionFiltersPanel({
 
         <div className="row g-3">
           <div className="col-12 col-md-6 col-xl-3">
-            <label htmlFor="filter-sent-date" className="form-label">
-              Fecha creada
+            <label htmlFor="filter-created-from" className="form-label">
+              Fecha creada desde
             </label>
             <input
-              id="filter-sent-date"
+              id="filter-created-from"
               type="date"
               className="form-control"
-              value={filters.fechaCreacion}
-              onChange={(event) => onFilterChange("fechaCreacion", event.target.value)}
+              value={filters.fechaCreacionDesde}
+              onChange={(event) => onFilterChange("fechaCreacionDesde", event.target.value)}
             />
           </div>
 
           <div className="col-12 col-md-6 col-xl-3">
-            <label htmlFor="filter-received-date" className="form-label">
-              Fecha recibida
+            <label htmlFor="filter-created-to" className="form-label">
+              Fecha creada hasta
             </label>
             <input
-              id="filter-received-date"
+              id="filter-created-to"
               type="date"
               className="form-control"
-              value={filters.fechaRecepcion}
-              onChange={(event) => onFilterChange("fechaRecepcion", event.target.value)}
+              value={filters.fechaCreacionHasta}
+              onChange={(event) => onFilterChange("fechaCreacionHasta", event.target.value)}
+            />
+          </div>
+
+          <div className="col-12 col-md-6 col-xl-3">
+            <label htmlFor="filter-received-from" className="form-label">
+              Fecha recibida desde
+            </label>
+            <input
+              id="filter-received-from"
+              type="date"
+              className="form-control"
+              value={filters.fechaRecepcionDesde}
+              onChange={(event) => onFilterChange("fechaRecepcionDesde", event.target.value)}
+            />
+          </div>
+
+          <div className="col-12 col-md-6 col-xl-3">
+            <label htmlFor="filter-received-to" className="form-label">
+              Fecha recibida hasta
+            </label>
+            <input
+              id="filter-received-to"
+              type="date"
+              className="form-control"
+              value={filters.fechaRecepcionHasta}
+              onChange={(event) => onFilterChange("fechaRecepcionHasta", event.target.value)}
             />
           </div>
 
@@ -149,8 +175,10 @@ export default function ExpeditionFiltersPanel({
               type="button"
               className="btn btn-outline-secondary"
               onClick={() => {
-                onFilterChange("fechaCreacion", "");
-                onFilterChange("fechaRecepcion", "");
+                onFilterChange("fechaCreacionDesde", "");
+                onFilterChange("fechaCreacionHasta", "");
+                onFilterChange("fechaRecepcionDesde", "");
+                onFilterChange("fechaRecepcionHasta", "");
                 onFilterChange("username", "");
                 onFilterChange("direccionDestino", "");
                 onFilterChange("estado", "");

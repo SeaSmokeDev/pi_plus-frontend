@@ -17,8 +17,10 @@ export interface Expedition {
 }
 
 export interface ExpeditionFilters {
-  fechaCreacion: ApiDate;
-  fechaRecepcion: ApiDate;
+  fechaCreacionDesde: ApiDate;
+  fechaCreacionHasta: ApiDate;
+  fechaRecepcionDesde: ApiDate;
+  fechaRecepcionHasta: ApiDate;
   username: string;
   direccionDestino: string;
   estado: ExpeditionStatus | "";

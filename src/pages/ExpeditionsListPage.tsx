@@ -13,8 +13,10 @@ const todayLabel = new Intl.DateTimeFormat("es-ES", {
 }).format(new Date());
 
 const emptyFilters: ExpeditionFilters = {
-  fechaCreacion: "",
-  fechaRecepcion: "",
+  fechaCreacionDesde: "",
+  fechaCreacionHasta: "",
+  fechaRecepcionDesde: "",
+  fechaRecepcionHasta: "",
   username: "",
   direccionDestino: "",
   estado: "",
@@ -44,8 +46,6 @@ export default function ExpeditionsListPage() {
         !searchValue ||
         String(expedition.id).includes(searchValue.trim()) ||
         normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue));
-      const matchesSentDate = !filters.fechaCreacion || expedition.fechaCreacion === filters.fechaCreacion;
-      const matchesReceivedDate = !filters.fechaRecepcion || expedition.fechaRecepcion === filters.fechaRecepcion;
       const matchedUser = users.find(
         (user) => user.username.toLowerCase() === filters.username.trim().toLowerCase()
       );
@@ -53,7 +53,7 @@ export default function ExpeditionsListPage() {
         !filters.username || (matchedUser ? expedition.usuarioId === matchedUser.usuarioId : false);
       const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
 
-      return matchesSearchValue && matchesSentDate && matchesReceivedDate && matchesAssignedTo && matchesDestination;
+      return matchesSearchValue && matchesAssignedTo && matchesDestination;
     });
   }, [filters, searchValue, expeditions, users]);
 
