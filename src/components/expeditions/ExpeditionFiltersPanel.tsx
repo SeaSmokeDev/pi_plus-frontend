@@ -128,6 +128,52 @@ export default function ExpeditionFiltersPanel({
               onChange={(event) => onFilterChange("direccionDestino", event.target.value)}
             />
           </div>
+          <div className="col-12 col-md-6 col-xl-3">
+            <label htmlFor="filter-status" className="form-label">
+              Estado
+            </label>
+            <input
+              id="filter-status"
+              type="text"
+              className="form-control"
+              placeholder="Ej: Madrid"
+              value={filters.estado}
+              onChange={(event) => onFilterChange("estado", event.target.value)}
+            />
+          </div>
+        </div>
+        
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mt-4">
+          <div className="d-flex justify-content-start">
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                onFilterChange("fechaCreacion", "");
+                onFilterChange("fechaRecepcion", "");
+                onFilterChange("username", "");
+                onFilterChange("direccionDestino", "");
+                onFilterChange("estado", "");
+              }}
+            >
+              Limpiar filtros
+            </button>
+          </div>
+
+          <div className="d-flex flex-column flex-sm-row justify-content-end gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-dark"
+            >
+              Busqueda profunda
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+            >
+              Aplicar a la lista actual
+            </button>
+          </div>
         </div>
       </div>
     </div>
