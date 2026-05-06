@@ -1,4 +1,4 @@
-import type { Expedition, CreateExpeditionRequest, UpdateExpeditionRequest,} from "../types";
+import type { Expedition, CreateExpeditionRequest, UpdateExpeditionRequest, ExpeditionList} from "../types";
 import { apiRequest } from "./apiClient";
 
 export function getAllExpeditions() {
@@ -19,6 +19,10 @@ export function getExpeditionsByUser(userName: string) {
 
 export function getExpeditionsByAddress(address: string) {
     return apiRequest<Expedition[]>(`/expediciones/direccion=${encodeURIComponent(address)}`);
+}
+
+export function getExpeditionsListToday() {
+    return apiRequest<ExpeditionList[]>(`/expediciones/today/list`);
 }
 
 export function createExpedition(expedition: CreateExpeditionRequest) {
