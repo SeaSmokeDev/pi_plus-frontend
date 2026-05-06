@@ -1,15 +1,15 @@
-import type { Expedition } from "../../types";
+import type { ExpeditionList } from "../../types";
 
 type ExpeditionCardProps = {
-  expedition: Expedition;
-  onEdit?: (expedition: Expedition) => void;
+  expedition: ExpeditionList;
+  onEdit?: (expedition: ExpeditionList) => void;
 };
 
-function formatStatusLabel(status: Expedition["estado"]): string {
+function formatStatusLabel(status: ExpeditionList["estado"]): string {
   return status === "en_transito" ? "En transito" : status === "abierta" ? "Abierta" : "Recibida";
 }
 
-function getStatusClassName(status: Expedition["estado"]): string {
+function getStatusClassName(status: ExpeditionList["estado"]): string {
   if (status === "abierta") {
     return "text-bg-warning";
   }
@@ -57,7 +57,7 @@ export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardPro
         <div className="row g-2">
           <div className="col-12 col-md-6">
             <div className="text-muted small mb-1">Usuario asignado</div>
-            <div className="fw-semibold">Usuario #{expedition.usuarioId}</div>
+            <div className="fw-semibold">{expedition.username}</div>
           </div>
 
           <div className="col-12 col-md-6">

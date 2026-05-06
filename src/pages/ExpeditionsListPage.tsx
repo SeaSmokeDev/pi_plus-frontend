@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
-import ExpeditionsList from "../components/expeditions/ExpeditionsList";
+import ExpeditionsListComponent from "../components/expeditions/ExpeditionsListComponent";
 import { useExpeditions } from "../hooks/useExpeditions";
-import { useSecurityUsers } from "../hooks/useSecurityUsers";
-import type { Expedition, ExpeditionFilters } from "../types";
+import type { ExpeditionFilters, ExpeditionList } from "../types";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
@@ -34,28 +33,64 @@ export default function ExpeditionsListPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const {
-    expeditions,
+    expeditionsList,
     loading,
     error,
   } = useExpeditions();
-  const { users, loading: loadingUsers } = useSecurityUsers();
+
+  const availableUsers = useMemo(() => {
+    return Array.from(
+      new Map(
+        expeditionsList.map((expedition) => [
+          expedition.username,
+          {
+            id: expedition.id,
+            username: expedition.username,
+            email: "",
+            rol: "logistica" as const,
+            activado: true,
+            usuarioId: expedition.id,
+          },
+        ])
+      ).values()
+    );
+  }, [expeditionsList]);
 
   const filteredExpeditions = useMemo(() => {
-    return expeditions.filter((expedition) => {
+    return expeditionsList.filter((expedition) => {
       const matchesSearchValue =
         !searchValue ||
         String(expedition.id).includes(searchValue.trim()) ||
-        normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue));
-      const matchedUser = users.find(
-        (user) => user.username.toLowerCase() === filters.username.trim().toLowerCase()
-      );
+        normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue)) ||
+        normalizeText(expedition.username).includes(normalizeText(searchValue));
+      const createdDate = expedition.fechaCreacion.slice(0, 10);
+      const receivedDate = expedition.fechaRecepcion?.slice(0, 10) || "";
+      const matchesCreatedFrom =
+        !filters.fechaCreacionDesde || createdDate >= filters.fechaCreacionDesde;
+      const matchesCreatedTo =
+        !filters.fechaCreacionHasta || createdDate <= filters.fechaCreacionHasta;
+      const matchesReceivedFrom =
+        !filters.fechaRecepcionDesde || (receivedDate && receivedDate >= filters.fechaRecepcionDesde);
+      const matchesReceivedTo =
+        !filters.fechaRecepcionHasta || (receivedDate && receivedDate <= filters.fechaRecepcionHasta);
       const matchesAssignedTo =
-        !filters.username || (matchedUser ? expedition.usuarioId === matchedUser.usuarioId : false);
+        !filters.username ||
+        normalizeText(expedition.username).includes(normalizeText(filters.username));
       const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
+      const matchesStatus = !filters.estado || expedition.estado === filters.estado;
 
-      return matchesSearchValue && matchesAssignedTo && matchesDestination;
+      return (
+        matchesSearchValue &&
+        matchesCreatedFrom &&
+        matchesCreatedTo &&
+        matchesReceivedFrom &&
+        matchesReceivedTo &&
+        matchesAssignedTo &&
+        matchesDestination &&
+        matchesStatus
+      );
     });
-  }, [filters, searchValue, expeditions, users]);
+  }, [filters, searchValue, expeditionsList]);
 
   if(loading) return <div className="container p-4">Cargando expediciones...</div>;
   if(error) return <div className="container p-4 text-danger">Error: {error}</div>;
@@ -107,8 +142,8 @@ export default function ExpeditionsListPage() {
       {showAdvancedFilters && (
         <ExpeditionFiltersPanel
           filters={filters}
-          users={users}
-          loadingUsers={loadingUsers}
+          users={availableUsers}
+          loadingUsers={loading}
           onFilterChange={handleFilterChange}
         />
       )}
@@ -123,9 +158,9 @@ export default function ExpeditionsListPage() {
           </div>
         </div>
 
-        <ExpeditionsList
-          expeditions={filteredExpeditions}
-          onEdit={(expedition: Expedition) => navigate(`/expeditions/${expedition.id}/edit`)}
+        <ExpeditionsListComponent
+          expeditionsList={filteredExpeditions}
+          onEdit={(expedition: ExpeditionList) => navigate(`/expeditions/${expedition.id}/edit`)}
         />
       </section>
 

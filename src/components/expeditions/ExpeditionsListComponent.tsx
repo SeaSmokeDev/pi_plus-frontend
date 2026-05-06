@@ -1,13 +1,13 @@
 import ExpeditionCard from "./ExpeditionCard";
-import type { Expedition } from "../../types";
+import type { ExpeditionList } from "../../types";
 
 type ExpeditionsListProps = {
-  expeditions: Expedition[];
-  onEdit?: (expedition: Expedition) => void;
+  expeditionsList: ExpeditionList[];
+  onEdit?: (expedition: ExpeditionList) => void;
 };
 
-export default function ExpeditionsList({ expeditions, onEdit }: ExpeditionsListProps) {
-  if (expeditions.length === 0) {
+export default function ExpeditionsList({ expeditionsList, onEdit }: ExpeditionsListProps) {
+  if (expeditionsList.length === 0) {
     return (
       <div className="card border-0 shadow-sm">
         <div className="card-body py-5 text-center">
@@ -23,7 +23,7 @@ export default function ExpeditionsList({ expeditions, onEdit }: ExpeditionsList
     );
   }
 
-  const shouldScroll = expeditions.length > 5;
+  const shouldScroll = expeditionsList.length > 5;
 
   return (
     <div
@@ -32,9 +32,9 @@ export default function ExpeditionsList({ expeditions, onEdit }: ExpeditionsList
         maxHeight: shouldScroll ? "560px" : undefined,
         overflowY: shouldScroll ? "auto" : undefined,
       }}
-    >
+      >
       <div className="row g-3">
-        {expeditions.map((expedition) => (
+        {expeditionsList.map((expedition) => (
           <div key={expedition.id} className="col-12">
             <ExpeditionCard expedition={expedition} onEdit={onEdit} />
           </div>
