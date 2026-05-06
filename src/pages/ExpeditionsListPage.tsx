@@ -2,20 +2,23 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateExpeditionModal from "../components/expeditions/CreateExpeditionModal";
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
-import { todayExpeditionsMock } from "../components/expeditions/mockData";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
-import ExpeditionsList from "../components/expeditions/ExpeditionsList";
-import type { Expedition, ExpeditionFilters } from "../components/expeditions/types";
+import ExpeditionsListComponent from "../components/expeditions/ExpeditionsListComponent";
+import { useExpeditions } from "../hooks/useExpeditions";
+import type { ExpeditionFilters, ExpeditionList } from "../types";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
 }).format(new Date());
 
 const emptyFilters: ExpeditionFilters = {
-  sentDate: "",
-  receivedDate: "",
-  assignedTo: "",
-  destination: "",
+  fechaCreacionDesde: "",
+  fechaCreacionHasta: "",
+  fechaRecepcionDesde: "",
+  fechaRecepcionHasta: "",
+  username: "",
+  direccionDestino: "",
+  estado: "",
 };
 
 function normalizeText(value: string): string {
@@ -29,29 +32,68 @@ export default function ExpeditionsListPage() {
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  const {
+    expeditionsList,
+    loading,
+    error,
+  } = useExpeditions();
+
+  const availableUsers = useMemo(() => {
+    return Array.from(
+      new Map(
+        expeditionsList.map((expedition) => [
+          expedition.username,
+          {
+            id: expedition.id,
+            username: expedition.username,
+            email: "",
+            rol: "logistica" as const,
+            activado: true,
+            usuarioId: expedition.id,
+          },
+        ])
+      ).values()
+    );
+  }, [expeditionsList]);
+
   const filteredExpeditions = useMemo(() => {
-    return todayExpeditionsMock.filter((expedition) => {
-      const matchesNumber = normalizeText(expedition.expeditionNumber).includes(normalizeText(searchValue));
-      const matchesSentDate =
-        !filters.sentDate || expedition.sentDate === filters.sentDate;
-      const matchesReceivedDate =
-        !filters.receivedDate || expedition.receivedDate === filters.receivedDate;
+    return expeditionsList.filter((expedition) => {
+      const matchesSearchValue =
+        !searchValue ||
+        String(expedition.id).includes(searchValue.trim()) ||
+        normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue)) ||
+        normalizeText(expedition.username).includes(normalizeText(searchValue));
+      const createdDate = expedition.fechaCreacion.slice(0, 10);
+      const receivedDate = expedition.fechaRecepcion?.slice(0, 10) || "";
+      const matchesCreatedFrom =
+        !filters.fechaCreacionDesde || createdDate >= filters.fechaCreacionDesde;
+      const matchesCreatedTo =
+        !filters.fechaCreacionHasta || createdDate <= filters.fechaCreacionHasta;
+      const matchesReceivedFrom =
+        !filters.fechaRecepcionDesde || (receivedDate && receivedDate >= filters.fechaRecepcionDesde);
+      const matchesReceivedTo =
+        !filters.fechaRecepcionHasta || (receivedDate && receivedDate <= filters.fechaRecepcionHasta);
       const matchesAssignedTo =
-        !filters.assignedTo ||
-        normalizeText(expedition.assignedTo).includes(normalizeText(filters.assignedTo));
-      const matchesDestination =
-        !filters.destination ||
-        normalizeText(expedition.destination).includes(normalizeText(filters.destination));
+        !filters.username ||
+        normalizeText(expedition.username).includes(normalizeText(filters.username));
+      const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
+      const matchesStatus = !filters.estado || expedition.estado === filters.estado;
 
       return (
-        matchesNumber &&
-        matchesSentDate &&
-        matchesReceivedDate &&
+        matchesSearchValue &&
+        matchesCreatedFrom &&
+        matchesCreatedTo &&
+        matchesReceivedFrom &&
+        matchesReceivedTo &&
         matchesAssignedTo &&
-        matchesDestination
+        matchesDestination &&
+        matchesStatus
       );
     });
-  }, [filters, searchValue]);
+  }, [filters, searchValue, expeditionsList]);
+
+  if(loading) return <div className="container p-4">Cargando expediciones...</div>;
+  if(error) return <div className="container p-4 text-danger">Error: {error}</div>;
 
   const handleFilterChange = (field: keyof ExpeditionFilters, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
@@ -98,22 +140,27 @@ export default function ExpeditionsListPage() {
       />
 
       {showAdvancedFilters && (
-        <ExpeditionFiltersPanel filters={filters} onFilterChange={handleFilterChange} />
+        <ExpeditionFiltersPanel
+          filters={filters}
+          users={availableUsers}
+          loadingUsers={loading}
+          onFilterChange={handleFilterChange}
+        />
       )}
 
       <section className="d-flex flex-column gap-3">
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
           <div>
-            <h2 className="h5 fw-bold mb-1">Expediciones visibles</h2>
+            <h2 className="h5 fw-bold mb-1">Expediciones visibles de hoy</h2>
             <p className="text-muted mb-0">
               {filteredExpeditions.length} expedicion{filteredExpeditions.length === 1 ? "" : "es"} encontrada{filteredExpeditions.length === 1 ? "" : "s"}.
             </p>
           </div>
         </div>
 
-        <ExpeditionsList
-          expeditions={filteredExpeditions}
-          onEdit={(expedition: Expedition) => navigate(`/expeditions/${expedition.id}/edit`)}
+        <ExpeditionsListComponent
+          expeditionsList={filteredExpeditions}
+          onEdit={(expedition: ExpeditionList) => navigate(`/expeditions/${expedition.id}/edit`)}
         />
       </section>
 

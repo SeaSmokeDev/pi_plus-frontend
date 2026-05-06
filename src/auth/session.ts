@@ -70,7 +70,7 @@ export function apiUrl(path: string): string {
 
 export async function getAuthenticatedUser(): Promise<AuthUser | null> {
   try {
-    const response = await fetch(apiUrl("/api/auth/user"), {
+    const response = await fetch(apiUrl("/auth/user"), {
       method: "GET",
       credentials: "include",
     });
@@ -99,7 +99,7 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
 }
 
 export async function logoutUser(): Promise<void> {
-  const response = await fetch(apiUrl("/api/auth/logout"), {
+  const response = await fetch(apiUrl("/auth/logout"), {
     method: "POST",
     credentials: "include",
   });
