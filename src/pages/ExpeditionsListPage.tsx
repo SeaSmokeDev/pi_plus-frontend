@@ -5,6 +5,7 @@ import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersP
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsListComponent from "../components/expeditions/ExpeditionsListComponent";
 import { useExpeditions } from "../hooks/useExpeditions";
+import { useUsers } from "../hooks/useUsers";
 import type { ExpeditionFilters, ExpeditionList } from "../types";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
@@ -37,24 +38,7 @@ export default function ExpeditionsListPage() {
     loading,
     error,
   } = useExpeditions();
-
-  const availableUsers = useMemo(() => {
-    return Array.from(
-      new Map(
-        expeditionsList.map((expedition) => [
-          expedition.username,
-          {
-            id: expedition.id,
-            username: expedition.username,
-            email: "",
-            rol: "logistica" as const,
-            activado: true,
-            usuarioId: expedition.id,
-          },
-        ])
-      ).values()
-    );
-  }, [expeditionsList]);
+  const { users, loading: loadingUsers } = useUsers();
 
   const filteredExpeditions = useMemo(() => {
     return expeditionsList.filter((expedition) => {
@@ -142,8 +126,8 @@ export default function ExpeditionsListPage() {
       {showAdvancedFilters && (
         <ExpeditionFiltersPanel
           filters={filters}
-          users={availableUsers}
-          loadingUsers={loading}
+          users={users}
+          loadingUsers={loadingUsers}
           onFilterChange={handleFilterChange}
         />
       )}

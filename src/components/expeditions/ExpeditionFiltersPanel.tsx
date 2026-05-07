@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import type { ExpeditionFilters, SecurityUser } from "../../types";
+import type { ExpeditionFilters, UserList } from "../../types";
 
 type ExpeditionFiltersPanelProps = {
   filters: ExpeditionFilters;
-  users: SecurityUser[];
+  users: UserList[];
   loadingUsers?: boolean;
   onFilterChange: (field: keyof ExpeditionFilters, value: string) => void;
 };
@@ -125,7 +125,7 @@ export default function ExpeditionFiltersPanel({
                 {!loadingUsers &&
                   filteredUsers.map((user) => (
                     <button
-                      key={user.id}
+                      key={user.username}
                       type="button"
                       className="dropdown-item px-3 py-2"
                       onMouseDown={() => {
@@ -134,7 +134,9 @@ export default function ExpeditionFiltersPanel({
                       }}
                     >
                       <div className="fw-semibold">{user.username}</div>
-                      <div className="small text-muted">{user.email}</div>
+                      <div className="small text-muted">
+                        {[user.nombre, user.apellido].filter(Boolean).join(" ") || "Sin nombre asociado"}
+                      </div>
                     </button>
                   ))}
               </div>
