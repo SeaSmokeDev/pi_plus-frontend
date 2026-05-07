@@ -1,6 +1,6 @@
-import type { SecurityUser } from "../types";
+import type { UserList } from "../types";
 import { apiRequest } from "./apiClient";
 
-export function getSecurityUsers() {
-  return apiRequest<SecurityUser[]>("/security/usuarios");
+export function getUsersList(){
+  return apiRequest<UserList[]>(`/usuarios/list`);
 }
