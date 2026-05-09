@@ -12,5 +12,6 @@ export interface UserList{
   nombre: string | null;
   apellido: string | null;
   username: string;
+  id: ID;
 }
 

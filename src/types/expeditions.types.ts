@@ -1,6 +1,5 @@
 import type { ApiDate, ID } from "./common.types";
 
-
 export type ExpeditionStatus = "abierta" | "en_transito" | "recibida";
 
 export interface Expedition {
@@ -16,7 +15,7 @@ export interface Expedition {
   estado: ExpeditionStatus;
 }
 
-export interface ExpeditionList{
+export interface ExpeditionList {
   id: ID;
   fechaCreacion: ApiDate;
   fechaRecepcion: ApiDate | null;
@@ -31,6 +30,7 @@ export interface ExpeditionFilters {
   fechaCreacionHasta: ApiDate;
   fechaRecepcionDesde: ApiDate;
   fechaRecepcionHasta: ApiDate;
+  usuarioId: ID | null;
   username: string;
   direccionDestino: string;
   estado: ExpeditionStatus | "";
