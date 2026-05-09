@@ -6,6 +6,9 @@ type ExpeditionFiltersPanelProps = {
   users: UserList[];
   loadingUsers?: boolean;
   onFilterChange: (field: keyof ExpeditionFilters, value: string) => void;
+  onClearFilters: () => void;
+  onDeepSearch: () => void;
+  onApplyCurrentList: () => void;
 };
 
 const USER_RESULTS_LIMIT = 5;
@@ -15,6 +18,9 @@ export default function ExpeditionFiltersPanel({
   users,
   loadingUsers = false,
   onFilterChange,
+  onClearFilters,
+  onDeepSearch,
+  onApplyCurrentList,
 }: ExpeditionFiltersPanelProps) {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
@@ -102,6 +108,7 @@ export default function ExpeditionFiltersPanel({
                 window.setTimeout(() => setIsUserDropdownOpen(false), 150);
               }}
               onChange={(event) => {
+                onFilterChange("usuarioId", "");
                 onFilterChange("username", event.target.value);
                 setIsUserDropdownOpen(true);
               }}
@@ -129,6 +136,7 @@ export default function ExpeditionFiltersPanel({
                       type="button"
                       className="dropdown-item px-3 py-2"
                       onMouseDown={() => {
+                        onFilterChange("usuarioId", String(user.id));
                         onFilterChange("username", user.username);
                         setIsUserDropdownOpen(false);
                       }}
@@ -156,35 +164,31 @@ export default function ExpeditionFiltersPanel({
               onChange={(event) => onFilterChange("direccionDestino", event.target.value)}
             />
           </div>
+
           <div className="col-12 col-md-6 col-xl-3">
             <label htmlFor="filter-status" className="form-label">
               Estado
             </label>
-            <input
+            <select
               id="filter-status"
-              type="text"
-              className="form-control"
-              placeholder="Ej: Madrid"
+              className="form-select"
               value={filters.estado}
               onChange={(event) => onFilterChange("estado", event.target.value)}
-            />
+            >
+              <option value="">Todos</option>
+              <option value="abierta">Abierta</option>
+              <option value="en_transito">En transito</option>
+              <option value="recibida">Recibida</option>
+            </select>
           </div>
         </div>
-        
+
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mt-4">
           <div className="d-flex justify-content-start">
             <button
               type="button"
               className="btn btn-outline-secondary"
-              onClick={() => {
-                onFilterChange("fechaCreacionDesde", "");
-                onFilterChange("fechaCreacionHasta", "");
-                onFilterChange("fechaRecepcionDesde", "");
-                onFilterChange("fechaRecepcionHasta", "");
-                onFilterChange("username", "");
-                onFilterChange("direccionDestino", "");
-                onFilterChange("estado", "");
-              }}
+              onClick={onClearFilters}
             >
               Limpiar filtros
             </button>
@@ -194,12 +198,14 @@ export default function ExpeditionFiltersPanel({
             <button
               type="button"
               className="btn btn-outline-dark"
+              onClick={onDeepSearch}
             >
               Busqueda profunda
             </button>
             <button
               type="button"
               className="btn btn-primary"
+              onClick={onApplyCurrentList}
             >
               Aplicar a la lista actual
             </button>

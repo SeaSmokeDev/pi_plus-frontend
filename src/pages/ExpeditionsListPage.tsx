@@ -17,6 +17,7 @@ const emptyFilters: ExpeditionFilters = {
   fechaCreacionHasta: "",
   fechaRecepcionDesde: "",
   fechaRecepcionHasta: "",
+  usuarioId: null,
   username: "",
   direccionDestino: "",
   estado: "",
@@ -31,12 +32,15 @@ export default function ExpeditionsListPage() {
   const [searchValue, setSearchValue] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
+  const [appliedLocalFilters, setAppliedLocalFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const {
     expeditionsList,
     loading,
     error,
+    reloadList,
+    searchList,
   } = useExpeditions();
   const { users, loading: loadingUsers } = useUsers();
 
@@ -47,21 +51,28 @@ export default function ExpeditionsListPage() {
         String(expedition.id).includes(searchValue.trim()) ||
         normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue)) ||
         normalizeText(expedition.username).includes(normalizeText(searchValue));
+
       const createdDate = expedition.fechaCreacion.slice(0, 10);
       const receivedDate = expedition.fechaRecepcion?.slice(0, 10) || "";
+
       const matchesCreatedFrom =
-        !filters.fechaCreacionDesde || createdDate >= filters.fechaCreacionDesde;
+        !appliedLocalFilters.fechaCreacionDesde || createdDate >= appliedLocalFilters.fechaCreacionDesde;
       const matchesCreatedTo =
-        !filters.fechaCreacionHasta || createdDate <= filters.fechaCreacionHasta;
+        !appliedLocalFilters.fechaCreacionHasta || createdDate <= appliedLocalFilters.fechaCreacionHasta;
       const matchesReceivedFrom =
-        !filters.fechaRecepcionDesde || (receivedDate && receivedDate >= filters.fechaRecepcionDesde);
+        !appliedLocalFilters.fechaRecepcionDesde ||
+        (receivedDate !== "" && receivedDate >= appliedLocalFilters.fechaRecepcionDesde);
       const matchesReceivedTo =
-        !filters.fechaRecepcionHasta || (receivedDate && receivedDate <= filters.fechaRecepcionHasta);
+        !appliedLocalFilters.fechaRecepcionHasta ||
+        (receivedDate !== "" && receivedDate <= appliedLocalFilters.fechaRecepcionHasta);
       const matchesAssignedTo =
-        !filters.username ||
-        normalizeText(expedition.username).includes(normalizeText(filters.username));
-      const matchesDestination = !filters.direccionDestino || normalizeText(expedition.direccionDestino).includes(normalizeText(filters.direccionDestino));
-      const matchesStatus = !filters.estado || expedition.estado === filters.estado;
+        !appliedLocalFilters.username ||
+        normalizeText(expedition.username).includes(normalizeText(appliedLocalFilters.username));
+      const matchesDestination =
+        !appliedLocalFilters.direccionDestino ||
+        normalizeText(expedition.direccionDestino).includes(normalizeText(appliedLocalFilters.direccionDestino));
+      const matchesStatus =
+        !appliedLocalFilters.estado || expedition.estado === appliedLocalFilters.estado;
 
       return (
         matchesSearchValue &&
@@ -74,13 +85,42 @@ export default function ExpeditionsListPage() {
         matchesStatus
       );
     });
-  }, [filters, searchValue, expeditionsList]);
+  }, [appliedLocalFilters, searchValue, expeditionsList]);
 
-  if(loading) return <div className="container p-4">Cargando expediciones...</div>;
-  if(error) return <div className="container p-4 text-danger">Error: {error}</div>;
+  if (loading) return <div className="container p-4">Cargando expediciones...</div>;
+  if (error) return <div className="container p-4 text-danger">Error: {error}</div>;
 
   const handleFilterChange = (field: keyof ExpeditionFilters, value: string) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
+    setFilters((prev) => ({
+      ...prev,
+      [field]: field === "usuarioId" ? (value === "" ? null : Number(value)) : value,
+    }));
+  };
+
+  const handleApplyCurrentList = () => {
+    setAppliedLocalFilters(filters);
+  };
+
+  const handleClearFilters = async () => {
+    setFilters(emptyFilters);
+    setAppliedLocalFilters(emptyFilters);
+    setSearchValue("");
+    await reloadList();
+  };
+
+  const handleDeepSearch = async () => {
+    const resolvedUserId =
+      filters.usuarioId !== null
+        ? filters.usuarioId
+        : users.find((user) => user.username.toLowerCase() === filters.username.trim().toLowerCase())?.id ?? null;
+
+    const payload: ExpeditionFilters = {
+      ...filters,
+      usuarioId: resolvedUserId,
+    };
+
+    setAppliedLocalFilters(payload);
+    await searchList(payload);
   };
 
   return (
@@ -129,13 +169,16 @@ export default function ExpeditionsListPage() {
           users={users}
           loadingUsers={loadingUsers}
           onFilterChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
+          onDeepSearch={handleDeepSearch}
+          onApplyCurrentList={handleApplyCurrentList}
         />
       )}
 
       <section className="d-flex flex-column gap-3">
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
           <div>
-            <h2 className="h5 fw-bold mb-1">Expediciones visibles de hoy</h2>
+            <h2 className="h5 fw-bold mb-1">Expediciones visibles</h2>
             <p className="text-muted mb-0">
               {filteredExpeditions.length} expedicion{filteredExpeditions.length === 1 ? "" : "es"} encontrada{filteredExpeditions.length === 1 ? "" : "s"}.
             </p>

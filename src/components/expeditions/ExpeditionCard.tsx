@@ -21,6 +21,21 @@ function getStatusClassName(status: ExpeditionList["estado"]): string {
   return "bg-primary-subtle text-primary-emphasis";
 }
 
+function formatDateForView(value: string | null): string {
+  if (!value) {
+    return "Pendiente";
+  }
+
+  const datePart = value.slice(0, 10);
+  const [year, month, day] = datePart.split("-");
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return `${day}/${month}/${year}`;
+}
+
 export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardProps) {
   const canEdit = expedition.estado === "abierta";
 
@@ -67,12 +82,12 @@ export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardPro
 
           <div className="col-12 col-md-6">
             <div className="text-muted small mb-1">Fecha creacion</div>
-            <div>{expedition.fechaCreacion}</div>
+            <div>{formatDateForView(expedition.fechaCreacion)}</div>
           </div>
 
           <div className="col-12 col-md-6">
             <div className="text-muted small mb-1">Fecha recibida</div>
-            <div>{expedition.fechaRecepcion || "Pendiente"}</div>
+            <div>{formatDateForView(expedition.fechaRecepcion)}</div>
           </div>
         </div>
       </div>
