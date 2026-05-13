@@ -15,3 +15,7 @@ export interface UserList{
   id: ID;
 }
 
+export interface UserId{
+  id: ID;
+}
+
