@@ -1,4 +1,22 @@
-import type { ExpeditionDetailData } from "./types";
+type ExpeditionDetailData = {
+  expeditionNumber: string;
+  currentStatusLabel: string;
+  currentStatusDate: string;
+  assignedTo: string;
+  originType: string;
+  originCode: string;
+  originInfoTitle: string;
+  originInfoDescription: string;
+  destinationType: string;
+  destinationCode: string;
+  destinationInfoTitle: string;
+  destinationInfoDescription: string;
+  sentAt: string;
+  expectedReceptionAt: string;
+  packages: string;
+  kilos: string;
+  observations: string;
+};
 
 type ExpeditionDetailSidebarProps = {
   title: string;

@@ -1,4 +1,12 @@
-import type { ExpeditionTerminalDetailItem } from "./types";
+type ExpeditionTerminalDetailItem = {
+  id: string | number;
+  model: string;
+  entity: string;
+  status: string;
+  location: string;
+  coverage?: string;
+  serialNumber: string;
+};
 
 type ExpeditionTerminalsPanelProps = {
   source: "csv" | "ns";

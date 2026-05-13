@@ -1,4 +1,8 @@
-import type { ExpeditionTerminalSummaryItem } from "./types";
+type ExpeditionTerminalSummaryItem = {
+  model: string;
+  entity: string;
+  quantity: number;
+};
 
 type ExpeditionSummaryPanelProps = {
   items: ExpeditionTerminalSummaryItem[];

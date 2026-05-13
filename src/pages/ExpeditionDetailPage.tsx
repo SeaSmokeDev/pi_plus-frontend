@@ -1,20 +1,13 @@
-import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
-import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
-import ExpeditionTerminalsPanel from "../components/expeditions/ExpeditionTerminalsPanel";
 // import {
 //   createNewExpeditionDraft,
 //   expeditionDetailsMock,
 // } from "../components/expeditions/mockData";
 // import type { ExpeditionDetailData } from "../components/expeditions/types";
 
-export default function ExpeditionDetailPage() {
-  const navigate = useNavigate();
-  const { expeditionId } = useParams();
-  const parsedExpeditionId = expeditionId ? Number(expeditionId) : undefined;
-  const isEditMode = Boolean(parsedExpeditionId);
+// import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
+// import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
 
+export default function ExpeditionDetailPage() {
   // const initialData = useMemo<ExpeditionDetailData>(() => {
   //   if (parsedExpeditionId && expeditionDetailsMock[parsedExpeditionId]) {
   //     return expeditionDetailsMock[parsedExpeditionId];
