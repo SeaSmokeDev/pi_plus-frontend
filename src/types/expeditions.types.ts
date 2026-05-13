@@ -42,7 +42,7 @@ export interface CreateExpeditionRequest {
   peso?: number | null;
   notas?: string | null;
   usuarioId: ID;
-  estado?: ExpeditionStatus;
+  fechaEnvio?: ApiDate | null;
 }
 
 export interface UpdateExpeditionRequest {

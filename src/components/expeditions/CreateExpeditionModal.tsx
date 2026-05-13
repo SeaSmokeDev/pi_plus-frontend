@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getAuthenticatedUser, getAuthUserFromCookie, type AuthUser } from "../../auth/session";
 
 type CreateExpeditionModalProps = {
   isOpen: boolean;
@@ -6,47 +7,42 @@ type CreateExpeditionModalProps = {
   onContinue: () => void;
 };
 
-type FormState = {
-  originType: string;
-  origin: string;
-  destinationType: string;
-  destination: string;
-  sentAt: string;
-  expectedReceptionAt: string;
-  packages: string;
-  kilos: string;
-  observations: string;
-};
-
-const initialFormState: FormState = {
-  originType: "Almacen",
-  origin: "AL1",
-  destinationType: "Almacen",
-  destination: "al48-lectus",
-  sentAt: "2026-04-06T08:30",
-  expectedReceptionAt: "2026-04-06T17:00",
-  packages: "",
-  kilos: "",
-  observations: "",
-};
 
 const originInfo = {
   title: "AL1 - ALMACEN DE ALICANTE (Alicante)",
   description: "ALMACEN@NECOMPLUS.COM",
 };
 
-const destinationInfo = {
-  title: "al48-lectus - Lectus (Barcelona)",
-  description: "f.l.martinez@hotmail.es · a.amezcua.rodriguez@gmail.com · lectus2012sl@gmail.com",
-};
 
 export default function CreateExpeditionModal({
   isOpen,
   onClose,
   onContinue,
 }: CreateExpeditionModalProps) {
-  const [form, setForm] = useState<FormState>(initialFormState);
+  const [form, setForm] = useState<{}>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => getAuthUserFromCookie());
+  
+  useEffect(() => {
+        if (authUser) {
+          return;
+        }
+    
+        let isMounted = true;
+    
+        const loadUser = async () => {
+          const user = await getAuthenticatedUser();
+          if (isMounted && user) {
+            setAuthUser(user);
+          }
+        };
+    
+        void loadUser();
+    
+        return () => {
+          isMounted = false;
+        };
+      }, [authUser]);
 
   if (!isOpen) {
     return null;
@@ -57,7 +53,6 @@ export default function CreateExpeditionModal({
   };
 
   const handleCancel = () => {
-    setForm(initialFormState);
     setShowConfirmation(false);
     onClose();
   };
@@ -67,7 +62,6 @@ export default function CreateExpeditionModal({
   };
 
   const handleConfirmContinue = () => {
-    setForm(initialFormState);
     setShowConfirmation(false);
     onContinue();
   };
@@ -90,61 +84,17 @@ export default function CreateExpeditionModal({
 
             <div className="modal-body p-4">
               <div className="row g-4">
-                {/* <div className="col-12 col-lg-6">
-                  <label htmlFor="origin-type" className="form-label fw-semibold">
-                    Origen
-                  </label>
-                  <select
-                    id="origin-type"
-                    className="form-select"
-                    value={form.originType}
-                    onChange={(event) => handleChange("originType", event.target.value)}
-                  >
-                    <option>Almacen</option>
-                    <option>Tienda</option>
-                    <option>Delegacion</option>
-                  </select>
-                </div> */}
-
                 <div className="col-12 col-lg-6">
                   <label htmlFor="origin" className="form-label fw-semibold">
                     Origen*
                   </label>
-                  <div className="input-group">
-                    <input
-                      id="origin"
-                      type="text"
-                      className="form-control"
-                      value={form.origin}
-                      onChange={(event) => handleChange("origin", event.target.value)}
-                    />
-                    <span className="input-group-text">
-                      <span className="material-symbols-outlined">warehouse</span>
-                    </span>
-                  </div>
                 </div>
 
-                <div className="col-12">
+                <div className="col-12 mt-0">
                   <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
                     <div className="fw-semibold text-primary-emphasis">{originInfo.title}</div>
                     <div className="text-primary-emphasis">{originInfo.description}</div>
                   </div>
-                </div>
-
-                <div className="col-12 col-lg-6">
-                  <label htmlFor="destination-type" className="form-label fw-semibold">
-                    Tipo Destino
-                  </label>
-                  <select
-                    id="destination-type"
-                    className="form-select"
-                    value={form.destinationType}
-                    onChange={(event) => handleChange("destinationType", event.target.value)}
-                  >
-                    <option>Almacen</option>
-                    <option>Tienda</option>
-                    <option>Delegacion</option>
-                  </select>
                 </div>
 
                 <div className="col-12 col-lg-6">
@@ -156,19 +106,12 @@ export default function CreateExpeditionModal({
                       id="destination"
                       type="text"
                       className="form-control"
-                      value={form.destination}
+                      placeholder="Introduce el destino de la expedicion"
                       onChange={(event) => handleChange("destination", event.target.value)}
                     />
                     <span className="input-group-text">
                       <span className="material-symbols-outlined">location_on</span>
                     </span>
-                  </div>
-                </div>
-
-                <div className="col-12">
-                  <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
-                    <div className="fw-semibold text-primary-emphasis">{destinationInfo.title}</div>
-                    <div className="text-primary-emphasis">{destinationInfo.description}</div>
                   </div>
                 </div>
 
@@ -180,21 +123,8 @@ export default function CreateExpeditionModal({
                     id="sent-at"
                     type="datetime-local"
                     className="form-control"
-                    value={form.sentAt}
+                    
                     onChange={(event) => handleChange("sentAt", event.target.value)}
-                  />
-                </div>
-
-                <div className="col-12 col-lg-6">
-                  <label htmlFor="expected-reception-at" className="form-label fw-semibold">
-                    Fecha/Hora prevista recepcion
-                  </label>
-                  <input
-                    id="expected-reception-at"
-                    type="datetime-local"
-                    className="form-control"
-                    value={form.expectedReceptionAt}
-                    onChange={(event) => handleChange("expectedReceptionAt", event.target.value)}
                   />
                 </div>
 
@@ -207,7 +137,7 @@ export default function CreateExpeditionModal({
                     type="number"
                     min="0"
                     className="form-control"
-                    value={form.packages}
+                    placeholder="2"
                     onChange={(event) => handleChange("packages", event.target.value)}
                   />
                 </div>
@@ -222,7 +152,7 @@ export default function CreateExpeditionModal({
                     min="0"
                     step="0.01"
                     className="form-control"
-                    value={form.kilos}
+                    placeholder="0.00"
                     onChange={(event) => handleChange("kilos", event.target.value)}
                   />
                 </div>
@@ -235,7 +165,6 @@ export default function CreateExpeditionModal({
                     id="observations"
                     className="form-control"
                     rows={4}
-                    value={form.observations}
                     onChange={(event) => handleChange("observations", event.target.value)}
                     placeholder="Anade aqui cualquier detalle relevante para la expedicion"
                   />
@@ -268,7 +197,7 @@ export default function CreateExpeditionModal({
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content border-0 shadow">
                 <div className="modal-header">
-                  <h3 className="modal-title h5 mb-0">Confirmar origen y destino</h3>
+                  <h3 className="modal-title h5 mb-0">Confirmar destino</h3>
                   <button
                     type="button"
                     className="btn-close"
@@ -279,13 +208,11 @@ export default function CreateExpeditionModal({
 
                 <div className="modal-body">
                   <p className="mb-3">
-                    Confirma que el origen y el destino son correctos. Despues no se podran cambiar.
+                    Confirma que el destino es correcto. Despues no se podran cambiar.
                   </p>
 
                   <div className="rounded-3 bg-light border px-3 py-3 d-flex flex-column gap-2">
-                    <div>
-                      <span className="fw-semibold">Origen:</span> {form.origin}
-                    </div>
+                    
                     <div>
                       <span className="fw-semibold">Destino:</span> {form.destination}
                     </div>
