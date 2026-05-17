@@ -36,13 +36,17 @@ export interface ExpeditionFilters {
   estado: ExpeditionStatus | "";
 }
 
-export interface CreateExpeditionRequest {
+export interface ExpeditionDraftData {
   direccionDestino: string;
   paquetes?: number | null;
   peso?: number | null;
   notas?: string | null;
   usuarioId: ID;
   fechaEnvio?: ApiDate | null;
+}
+
+export interface CreateExpeditionBatchRequest extends ExpeditionDraftData {
+  cajaIds: ID[];
 }
 
 export interface UpdateExpeditionRequest {

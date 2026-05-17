@@ -28,7 +28,7 @@ const initialForm: FormState = {
   notas: "",
 };
 
-const PENDING_EXPEDITION_STORAGE_KEY = "pi_plus_pending_expedition";
+const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
 const originInfo = {
   title: "AL1 - ALMACEN DE ALICANTE (Alicante)",
@@ -47,7 +47,10 @@ export default function CreateExpeditionModal({
     getAuthUserFromCookie(),
   );
 
-  const { user, loading, error, reload } = useUserId(authUser?.username);
+  const {
+    user,
+    loadUserId,
+  } = useUserId(authUser?.username);
 
   useEffect(() => {
     if (authUser) {
@@ -93,9 +96,21 @@ export default function CreateExpeditionModal({
     setShowConfirmation(true);
   };
 
-  const handleConfirmContinue = () => {
+  const handleConfirmContinue = async () => {
+    if (!authUser?.username) {
+      setDestinationError("No se ha encontrado el usuario autenticado.");
+      return;
+    }
+
+    const resolvedUser = user ?? (await loadUserId(authUser.username));
+
+    if (!resolvedUser) {
+      setDestinationError("No se ha podido obtener el usuario.");
+      return;
+    }
+
     const pendingExpedition = {
-      usuarioId: null,
+      usuarioId: resolvedUser.id,
       direccionDestino: form.direccionDestino.trim(),
       peso: form.peso ? Number(form.peso) : null,
       paquetes: form.paquetes ? Number(form.paquetes) : null,
@@ -107,6 +122,9 @@ export default function CreateExpeditionModal({
       PENDING_EXPEDITION_STORAGE_KEY,
       JSON.stringify(pendingExpedition),
     );
+
+
+
     setShowConfirmation(false);
     onContinue();
   };
