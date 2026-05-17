@@ -1,41 +1,70 @@
-// import {
-//   createNewExpeditionDraft,
-//   expeditionDetailsMock,
-// } from "../components/expeditions/mockData";
-// import type { ExpeditionDetailData } from "../components/expeditions/types";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import type { ExpeditionDraftData } from "../types";
 
-// import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
+const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
+
+import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 // import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
 
 export default function ExpeditionDetailPage() {
-  // const initialData = useMemo<ExpeditionDetailData>(() => {
-  //   if (parsedExpeditionId && expeditionDetailsMock[parsedExpeditionId]) {
-  //     return expeditionDetailsMock[parsedExpeditionId];
-  //   }
+  const navigate = useNavigate();
+  const { expeditionId } = useParams();
 
-  //   return createNewExpeditionDraft();
-  // }, [parsedExpeditionId]);
+  const isEditMode = Boolean(expeditionId);
 
-  // const [form, setForm] = useState<ExpeditionDetailData>(initialData);
+  const [draft, setDraft] = useState<ExpeditionDraftData | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(true);
 
-  // const handleFieldChange = (field: keyof ExpeditionDetailData, value: string) => {
-  //   setForm((prev) => ({ ...prev, [field]: value }));
-  // };
+  useEffect(() => {
+    if (isEditMode) {
+      setLoadingDraft(false);
+      return;
+    }
+
+    const savedDraft = sessionStorage.getItem(PENDING_EXPEDITION_STORAGE_KEY);
+
+    if (!savedDraft) {
+      navigate("/expeditions");
+      return;
+    }
+
+    try {
+      const parsedDraft = JSON.parse(savedDraft) as ExpeditionDraftData;
+      setDraft(parsedDraft);
+    } catch (error) {
+      console.error("Error parsing expedition draft:", error);
+      sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
+      navigate("/expeditions");
+      return;
+    } finally {
+      setLoadingDraft(false);
+    }
+  }, [isEditMode, navigate]);
+
+  if (loadingDraft) {
+    return <div className="container p-4">Cargando expedición...</div>;
+  }
 
   return (
     <div className="container-fluid p-4 d-flex flex-column gap-4">
       <div className="d-flex flex-column flex-xl-row gap-4 align-items-start">
         <div style={{ width: "100%", maxWidth: "420px" }}>
-          {/* <ExpeditionDetailSidebar
+          <ExpeditionDetailSidebar
             title={isEditMode ? "Datos de la expedicion" : "Crear expedicion"}
-            submitLabel={isEditMode ? "Salir Guardando Cambios" : "Guardar expedicion"}
-            form={form}
-            onChange={handleFieldChange}
+            submitLabel={
+              isEditMode ? "Salir Guardando Cambios" : "Guardar expedicion"
+            }
+            form={draft}
+           
             onCancel={() => navigate("/expeditions")}
-          /> */}
+          />
         </div>
 
-        <div className="flex-grow-1 d-flex flex-column gap-4" style={{ minWidth: 0 }}>
+        <div
+          className="flex-grow-1 d-flex flex-column gap-4"
+          style={{ minWidth: 0 }}
+        >
           {/* <ExpeditionSummaryPanel items={form.terminalSummary} />
 
           <ExpeditionTerminalsPanel

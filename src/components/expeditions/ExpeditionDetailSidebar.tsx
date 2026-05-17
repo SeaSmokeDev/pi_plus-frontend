@@ -1,28 +1,10 @@
-type ExpeditionDetailData = {
-  expeditionNumber: string;
-  currentStatusLabel: string;
-  currentStatusDate: string;
-  assignedTo: string;
-  originType: string;
-  originCode: string;
-  originInfoTitle: string;
-  originInfoDescription: string;
-  destinationType: string;
-  destinationCode: string;
-  destinationInfoTitle: string;
-  destinationInfoDescription: string;
-  sentAt: string;
-  expectedReceptionAt: string;
-  packages: string;
-  kilos: string;
-  observations: string;
-};
+import type { ExpeditionDraftData } from "../../types";
 
 type ExpeditionDetailSidebarProps = {
   title: string;
   submitLabel: string;
-  form: ExpeditionDetailData;
-  onChange: (field: keyof ExpeditionDetailData, value: string) => void;
+  form: ExpeditionDraftData;
+  onChange: (field: keyof ExpeditionDraftData, value: string) => void;
   onCancel: () => void;
 };
 
@@ -41,30 +23,19 @@ export default function ExpeditionDetailSidebar({
 
       <div className="card-body d-flex flex-column gap-4">
         <div>
-          <h2 className="h6 fw-bold mb-3">Nº Expedicion {form.expeditionNumber}</h2>
+          <h2 className="h6 fw-bold mb-3">Nº Expedicion 123</h2>
           <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
-            <div className="fw-semibold text-primary-emphasis">
-              Estado de la expedicion: {form.currentStatusLabel}
-            </div>
+            
             <div className="text-primary-emphasis">
-              [{form.currentStatusDate} {form.assignedTo}]
+              Usuario Asignado:  {form.usuarioId}
             </div>
           </div>
         </div>
 
         <div className="row g-3">
-          <div className="col-12 col-md-6 col-xl-12 col-xxl-6">
+          {/* <div className="col-12 col-md-6 col-xl-12 col-xxl-6">
             <label className="form-label fw-semibold">Tipo Origen</label>
-            <select
-              className="form-select"
-              value={form.originType}
-              onChange={(event) => onChange("originType", event.target.value)}
-              disabled
-            >
-              <option>Almacen</option>
-              <option>Tienda</option>
-              <option>Delegacion</option>
-            </select>
+            <input className="form-control" value="Almacen" readOnly />
           </div>
 
           <div className="col-12 col-md-6 col-xl-12 col-xxl-6">
@@ -72,35 +43,20 @@ export default function ExpeditionDetailSidebar({
             <div className="input-group">
               <input
                 className="form-control"
-                value={form.originCode}
-                onChange={(event) => onChange("originCode", event.target.value)}
+                value="AL1"
                 readOnly
               />
               <span className="input-group-text">
                 <span className="material-symbols-outlined">warehouse</span>
               </span>
             </div>
-          </div>
+          </div> */}
 
           <div className="col-12">
             <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
-              <div className="fw-semibold text-primary-emphasis">{form.originInfoTitle}</div>
-              <div className="text-primary-emphasis">{form.originInfoDescription}</div>
+              <div className="fw-semibold text-primary-emphasis">Información del Origen</div>
+              <div className="text-primary-emphasis">Almacen AL-1</div>
             </div>
-          </div>
-
-          <div className="col-12 col-md-6 col-xl-12 col-xxl-6">
-            <label className="form-label fw-semibold">Tipo Destino</label>
-            <select
-              className="form-select"
-              value={form.destinationType}
-              onChange={(event) => onChange("destinationType", event.target.value)}
-              disabled
-            >
-              <option>Almacen</option>
-              <option>Tienda</option>
-              <option>Delegacion</option>
-            </select>
           </div>
 
           <div className="col-12 col-md-6 col-xl-12 col-xxl-6">
@@ -108,8 +64,7 @@ export default function ExpeditionDetailSidebar({
             <div className="input-group">
               <input
                 className="form-control"
-                value={form.destinationCode}
-                onChange={(event) => onChange("destinationCode", event.target.value)}
+                value={form.direccionDestino}
                 readOnly
               />
               <span className="input-group-text">
@@ -120,8 +75,8 @@ export default function ExpeditionDetailSidebar({
 
           <div className="col-12">
             <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
-              <div className="fw-semibold text-primary-emphasis">{form.destinationInfoTitle}</div>
-              <div className="text-primary-emphasis">{form.destinationInfoDescription}</div>
+              <div className="fw-semibold text-primary-emphasis">Información del Destino</div>
+              <div className="text-primary-emphasis">{form.direccionDestino}</div>
             </div>
           </div>
 
@@ -130,27 +85,19 @@ export default function ExpeditionDetailSidebar({
             <input
               type="datetime-local"
               className="form-control"
-              value={form.sentAt}
-              onChange={(event) => onChange("sentAt", event.target.value)}
+              value={form.fechaEnvio ?? ""}
+              onChange={(event) => onChange("fechaEnvio", event.target.value)}
             />
           </div>
 
-          <div className="col-12 col-md-6">
-            <label className="form-label fw-semibold">Fecha/Hora Prevista recepcion</label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              value={form.expectedReceptionAt}
-              onChange={(event) => onChange("expectedReceptionAt", event.target.value)}
-            />
-          </div>
+          
 
           <div className="col-12 col-md-6">
             <label className="form-label fw-semibold">Bultos</label>
             <input
               className="form-control"
-              value={form.packages}
-              onChange={(event) => onChange("packages", event.target.value)}
+              value={form.paquetes ?? ""}
+              onChange={(event) => onChange("paquetes", event.target.value)}
             />
           </div>
 
@@ -158,8 +105,8 @@ export default function ExpeditionDetailSidebar({
             <label className="form-label fw-semibold">Kilos</label>
             <input
               className="form-control"
-              value={form.kilos}
-              onChange={(event) => onChange("kilos", event.target.value)}
+              value={form.peso ?? ""}
+              onChange={(event) => onChange("peso", event.target.value)}
             />
           </div>
 
@@ -168,8 +115,8 @@ export default function ExpeditionDetailSidebar({
             <textarea
               className="form-control"
               rows={4}
-              value={form.observations}
-              onChange={(event) => onChange("observations", event.target.value)}
+              value={form.notas ?? ""}
+              onChange={(event) => onChange("notas", event.target.value)}
             />
           </div>
         </div>
