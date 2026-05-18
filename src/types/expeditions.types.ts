@@ -41,11 +41,28 @@ export interface ExpeditionDraftData {
   paquetes?: number | null;
   peso?: number | null;
   notas?: string | null;
-  usuarioId: ID;
+  username: string;
   fechaEnvio?: ApiDate | null;
 }
 
-export interface CreateExpeditionBatchRequest extends ExpeditionDraftData {
+export interface ExpeditionDetailFormData {
+  username?: string;
+  usuarioId?: ID;
+  direccionDestino: string;
+  paquetes?: number | null;
+  peso?: number | null;
+  notas?: string | null;
+  fechaEnvio?: ApiDate | null;
+  estado?: ExpeditionStatus;
+}
+
+export interface CreateExpeditionBatchRequest {
+  direccionDestino: string;
+  paquetes?: number | null;
+  peso?: number | null;
+  notas?: string | null;
+  usuarioId: ID;
+  fechaEnvio?: ApiDate | null;
   cajaIds: ID[];
 }
 
