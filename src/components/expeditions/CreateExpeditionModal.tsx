@@ -4,7 +4,7 @@ import {
   getAuthUserFromCookie,
   type AuthUser,
 } from "../../auth/session";
-import { useUserId } from "../../hooks/useUserId";
+
 
 type CreateExpeditionModalProps = {
   isOpen: boolean;
@@ -47,10 +47,7 @@ export default function CreateExpeditionModal({
     getAuthUserFromCookie(),
   );
 
-  const {
-    user,
-    loadUserId,
-  } = useUserId(authUser?.username);
+  
 
   useEffect(() => {
     if (authUser) {
@@ -101,16 +98,9 @@ export default function CreateExpeditionModal({
       setDestinationError("No se ha encontrado el usuario autenticado.");
       return;
     }
-
-    const resolvedUser = user ?? (await loadUserId(authUser.username));
-
-    if (!resolvedUser) {
-      setDestinationError("No se ha podido obtener el usuario.");
-      return;
-    }
-
+    
     const pendingExpedition = {
-      usuarioId: resolvedUser.id,
+      username: authUser.username,
       direccionDestino: form.direccionDestino.trim(),
       peso: form.peso ? Number(form.peso) : null,
       paquetes: form.paquetes ? Number(form.paquetes) : null,
