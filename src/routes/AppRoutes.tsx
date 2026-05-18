@@ -26,7 +26,7 @@ export default function AppRoutes() {
           <Route path="/terminal-form" element={<TerminalFormPage />} />
           <Route path="/expeditions" element={<ExpeditionsListPage />} />
           <Route path="/expeditions/new" element={<ExpeditionDetailPage />} />
-          <Route path="/expeditions/:expeditionId/edit" element={<ExpeditionDetailPage />} />
+          <Route path="/expeditions/:reference/edit" element={<ExpeditionDetailPage />} />
         </Route>
       </Route>
     </Routes>
