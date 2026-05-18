@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { Expedition, ExpeditionDetailFormData, ExpeditionDraftData } from "../types";
+import type { ExpeditionDraftData } from "../types";
 
 const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
 import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
-// import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
+import ExpeditionBoxesPanel from "../components/expeditions/ExpeditionBoxesPanel";
 
 export default function ExpeditionDetailPage() {
   const navigate = useNavigate();
@@ -139,15 +139,7 @@ export default function ExpeditionDetailPage() {
           className="flex-grow-1 d-flex flex-column gap-4"
           style={{ minWidth: 0 }}
         >
-          {/* <ExpeditionSummaryPanel items={form.terminalSummary} />
-
-          <ExpeditionTerminalsPanel
-            source={form.terminalSource}
-            searchValue={form.terminalSearchValue}
-            terminals={form.terminalDetails}
-            onSourceChange={(value) => handleFieldChange("terminalSource", value)}
-            onSearchValueChange={(value) => handleFieldChange("terminalSearchValue", value)}
-          /> */}
+          <ExpeditionBoxesPanel />
         </div>
       </div>
     </div>

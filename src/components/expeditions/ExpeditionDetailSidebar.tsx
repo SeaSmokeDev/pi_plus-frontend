@@ -1,4 +1,4 @@
-import { useUserId } from "../../hooks/useUserId";
+// import { useUserId } from "../../hooks/useUserId";
 import type { ExpeditionDraftData } from "../../types";
 
 type ExpeditionDetailSidebarProps = {
