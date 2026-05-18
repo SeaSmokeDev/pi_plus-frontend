@@ -6,6 +6,7 @@ const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
 import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 import ExpeditionBoxesPanel from "../components/expeditions/ExpeditionBoxesPanel";
+import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
 
 export default function ExpeditionDetailPage() {
   const navigate = useNavigate();
@@ -140,6 +141,7 @@ export default function ExpeditionDetailPage() {
           style={{ minWidth: 0 }}
         >
           <ExpeditionBoxesPanel />
+          <ExpeditionSummaryPanel />
         </div>
       </div>
     </div>

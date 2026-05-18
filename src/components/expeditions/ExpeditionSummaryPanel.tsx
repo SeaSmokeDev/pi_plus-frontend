@@ -1,20 +1,8 @@
-type ExpeditionTerminalSummaryItem = {
-  model: string;
-  entity: string;
-  quantity: number;
-};
-
-type ExpeditionSummaryPanelProps = {
-  items: ExpeditionTerminalSummaryItem[];
-};
-
-export default function ExpeditionSummaryPanel({ items }: ExpeditionSummaryPanelProps) {
-  const total = items.reduce((acc, item) => acc + item.quantity, 0);
-
+export default function ExpeditionSummaryPanel() {
   return (
     <section className="card border-0 shadow-sm">
       <div className="card-header bg-white py-3">
-        <h2 className="h6 mb-0 fw-bold">Resumen de terminales vinculados</h2>
+        <h2 className="h6 mb-0 fw-bold">Detalles de los datáfonos vinculados</h2>
       </div>
 
       <div className="card-body p-0">
@@ -23,28 +11,36 @@ export default function ExpeditionSummaryPanel({ items }: ExpeditionSummaryPanel
             <thead className="table-light">
               <tr>
                 <th>Modelo</th>
-                <th>Entidad</th>
-                <th className="text-end">Cantidad</th>
+                <th>Marca</th>
+                <th>Estado</th>
+                <th>Número de serie</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item, index) => (
-                <tr key={`${item.model}-${index}`}>
-                  <td>{item.model}</td>
-                  <td>{item.entity}</td>
-                  <td className="text-end">{item.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="table-light">
-                <td colSpan={2} className="fw-semibold text-end">
-                  Cantidad total:
-                </td>
-                <td className="fw-bold text-end">{total}</td>
+              <tr>
+                <td className="text-muted">Sin modelo</td>
+                <td className="text-muted">Sin marca</td>
+                <td className="text-muted">Sin estado</td>
+                <td className="text-muted">Sin número de serie</td>
               </tr>
-            </tfoot>
+            </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div className="text-muted small">
+          Límite por vista: <span className="fw-semibold">50</span>
+        </div>
+
+        <div className="d-flex align-items-center gap-3 text-muted small">
+          <button type="button" className="btn btn-sm btn-outline-secondary" disabled>
+            Ant.
+          </button>
+          <span>1 - 50 de 200</span>
+          <button type="button" className="btn btn-sm btn-outline-secondary">
+            Sig.
+          </button>
         </div>
       </div>
     </section>
