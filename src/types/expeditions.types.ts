@@ -1,6 +1,5 @@
 import type { ApiDate, ID } from "./common.types";
 
-
 export type ExpeditionStatus = "abierta" | "en_transito" | "recibida";
 
 export interface Expedition {
@@ -16,11 +15,13 @@ export interface Expedition {
   estado: ExpeditionStatus;
 }
 
-export interface ExpeditionList{
+export interface ExpeditionList {
   id: ID;
+  referenciaExpedicion: string | null;
   fechaCreacion: ApiDate;
   fechaRecepcion: ApiDate | null;
   fechaModificacion: ApiDate | null;
+  fechaEnvio: ApiDate | null;
   direccionDestino: string;
   username: string;
   estado: ExpeditionStatus;
@@ -31,18 +32,42 @@ export interface ExpeditionFilters {
   fechaCreacionHasta: ApiDate;
   fechaRecepcionDesde: ApiDate;
   fechaRecepcionHasta: ApiDate;
+  fechaEnvio: ApiDate;
+  referenciaExpedicion: string;
+  usuarioId: ID | null;
   username: string;
   direccionDestino: string;
   estado: ExpeditionStatus | "";
 }
 
-export interface CreateExpeditionRequest {
+export interface ExpeditionDraftData {
+  direccionDestino: string;
+  paquetes?: number | null;
+  peso?: number | null;
+  notas?: string | null;
+  username: string;
+  fechaEnvio?: ApiDate | null;
+}
+
+export interface ExpeditionDetailFormData {
+  username?: string;
+  usuarioId?: ID;
+  direccionDestino: string;
+  paquetes?: number | null;
+  peso?: number | null;
+  notas?: string | null;
+  fechaEnvio?: ApiDate | null;
+  estado?: ExpeditionStatus;
+}
+
+export interface CreateExpeditionBatchRequest {
   direccionDestino: string;
   paquetes?: number | null;
   peso?: number | null;
   notas?: string | null;
   usuarioId: ID;
-  estado?: ExpeditionStatus;
+  fechaEnvio?: ApiDate | null;
+  cajaIds: ID[];
 }
 
 export interface UpdateExpeditionRequest {

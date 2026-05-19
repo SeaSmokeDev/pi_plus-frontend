@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import type { Expedition, ExpeditionList } from "../types";
+import type { Expedition, ExpeditionFilters, ExpeditionList } from "../types";
 import {
   getExpeditionsByAddress,
   getExpeditionsByUser,
-  getExpeditionsToday,
   getExpeditionsListToday,
+  getExpeditionsToday,
+  searchExpeditionsList,
 } from "../services/expeditionService";
 
 export function useExpeditions() {
@@ -36,6 +37,20 @@ export function useExpeditions() {
     } catch (err) {
       setError("Error al cargar la lista de expediciones");
       console.error("Error fetching expeditions list:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function searchList(filters: ExpeditionFilters) {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await searchExpeditionsList(filters);
+      setExpeditionsList(data);
+    } catch (err) {
+      setError("Error al buscar expediciones con filtros");
+      console.error("Error searching expeditions list:", err);
     } finally {
       setLoading(false);
     }
@@ -82,5 +97,6 @@ export function useExpeditions() {
     searchByUser,
     reload: loadAll,
     reloadList: loadAllList,
+    searchList,
   };
 }

@@ -1,10 +1,4 @@
-import type { ID } from "./common.types";
-
-export type UserRole =
-  | "trabajador_almacen"
-  | "tecnico"
-  | "logistica"
-  | "administrador";
+import type { ID, UserRole } from "./common.types";
 
 export interface User {
   id: ID;
@@ -14,11 +8,14 @@ export interface User {
   rol: UserRole;
 }
 
-export interface SecurityUser {
-  id: ID;
+export interface UserList{
+  nombre: string | null;
+  apellido: string | null;
   username: string;
-  email: string;
-  rol: UserRole;
-  activado: boolean;
-  usuarioId: ID;
+  id: ID;
 }
+
+export interface UserId{
+  id: ID;
+}
+

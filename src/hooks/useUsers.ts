@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import type { SecurityUser } from "../types";
-import { getSecurityUsers } from "../services/userService";
+import type { UserList } from "../types";
+import { getUsersList } from "../services/userService";
 
-export function useSecurityUsers() {
-  const [users, setUsers] = useState<SecurityUser[]>([]);
+export function useUsers() {
+  const [users, setUsers] = useState<UserList[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadUsers() {
+  async function loadUsersList() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getSecurityUsers();
+      const data = await getUsersList();
       setUsers(data);
     } catch (err) {
       setError("Error al cargar los usuarios");
@@ -22,13 +22,13 @@ export function useSecurityUsers() {
   }
 
   useEffect(() => {
-    void loadUsers();
+    void loadUsersList();
   }, []);
 
   return {
     users,
     loading,
     error,
-    reload: loadUsers,
+    reload: loadUsersList,
   };
 }

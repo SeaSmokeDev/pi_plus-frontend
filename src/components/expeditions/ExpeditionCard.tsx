@@ -21,16 +21,31 @@ function getStatusClassName(status: ExpeditionList["estado"]): string {
   return "bg-primary-subtle text-primary-emphasis";
 }
 
+function formatDateForView(value: string | null): string {
+  if (!value) {
+    return "Pendiente";
+  }
+
+  const datePart = value.slice(0, 10);
+  const [year, month, day] = datePart.split("-");
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return `${day}/${month}/${year}`;
+}
+
 export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardProps) {
   const canEdit = expedition.estado === "abierta";
-
+console.log("ExpeditionCard render", { expedition, canEdit });
   return (
     <article className="card border-0 shadow-sm h-100">
       <div className="card-body p-3 d-flex flex-column gap-3">
         <div className="d-flex justify-content-between align-items-start gap-3">
           <div>
             <p className="text-muted text-uppercase small fw-semibold mb-1">Expedicion</p>
-            <h2 className="h5 mb-0 fw-bold">#{expedition.id}</h2>
+            <h2 className="h5 mb-0 fw-bold">#{expedition.referenciaExpedicion}</h2>
           </div>
 
           <div className="d-flex align-items-start gap-2">
@@ -67,12 +82,17 @@ export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardPro
 
           <div className="col-12 col-md-6">
             <div className="text-muted small mb-1">Fecha creacion</div>
-            <div>{expedition.fechaCreacion}</div>
+            <div>{formatDateForView(expedition.fechaCreacion)}</div>
           </div>
 
           <div className="col-12 col-md-6">
             <div className="text-muted small mb-1">Fecha recibida</div>
-            <div>{expedition.fechaRecepcion || "Pendiente"}</div>
+            <div>{formatDateForView(expedition.fechaRecepcion)}</div>
+          </div>
+
+          <div className="col-12 col-md-6">
+            <div className="text-muted small mb-1">Fecha envio</div>
+            <div>{formatDateForView(expedition.fechaEnvio)}</div>
           </div>
         </div>
       </div>
