@@ -17,6 +17,8 @@ const emptyFilters: ExpeditionFilters = {
   fechaCreacionHasta: "",
   fechaRecepcionDesde: "",
   fechaRecepcionHasta: "",
+  fechaEnvio: "",
+  referenciaExpedicion: "",
   usuarioId: null,
   username: "",
   direccionDestino: "",

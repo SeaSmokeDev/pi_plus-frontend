@@ -17,9 +17,11 @@ export interface Expedition {
 
 export interface ExpeditionList {
   id: ID;
+  referenciaExpedicion: string | null;
   fechaCreacion: ApiDate;
   fechaRecepcion: ApiDate | null;
   fechaModificacion: ApiDate | null;
+  fechaEnvio: ApiDate | null;
   direccionDestino: string;
   username: string;
   estado: ExpeditionStatus;
@@ -30,6 +32,8 @@ export interface ExpeditionFilters {
   fechaCreacionHasta: ApiDate;
   fechaRecepcionDesde: ApiDate;
   fechaRecepcionHasta: ApiDate;
+  fechaEnvio: ApiDate;
+  referenciaExpedicion: string;
   usuarioId: ID | null;
   username: string;
   direccionDestino: string;

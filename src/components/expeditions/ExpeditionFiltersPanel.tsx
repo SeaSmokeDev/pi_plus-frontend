@@ -93,6 +93,19 @@ export default function ExpeditionFiltersPanel({
             />
           </div>
 
+          <div className="col-12 col-md-6 col-xl-3">
+            <label htmlFor="filter-envio" className="form-label">
+              Fecha envio
+            </label>
+            <input
+              id="filter-envio"
+              type="date"
+              className="form-control"
+              value={filters.fechaEnvio}
+              onChange={(event) => onFilterChange("fechaEnvio", event.target.value)}
+            />
+          </div>
+
           <div className="col-12 col-md-6 col-xl-3 position-relative">
             <label htmlFor="filter-assigned-user" className="form-label">
               Usuario asignado
