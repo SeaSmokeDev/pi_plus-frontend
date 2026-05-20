@@ -27,7 +27,7 @@ export interface ExpeditionList {
   estado: ExpeditionStatus;
 }
 
-export interface ExpeditionBatchList {
+export interface ExpeditionGroupList {
   referenciaExpedicion: string;
   fechaCreacion: ApiDate;
   fechaRecepcion: ApiDate | null;
@@ -36,17 +36,16 @@ export interface ExpeditionBatchList {
   direccionDestino: string;
   username: string;
   estado: ExpeditionStatus;
-  expeditionIds: ID[];
   totalExpediciones: number;
 }
 
 export interface ExpeditionFilters {
+  referenciaExpedicion: string;
   fechaCreacionDesde: ApiDate;
   fechaCreacionHasta: ApiDate;
   fechaRecepcionDesde: ApiDate;
   fechaRecepcionHasta: ApiDate;
   fechaEnvio: ApiDate;
-  referenciaExpedicion: string;
   usuarioId: ID | null;
   username: string;
   direccionDestino: string;

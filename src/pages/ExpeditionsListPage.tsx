@@ -6,7 +6,7 @@ import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsListComponent from "../components/expeditions/ExpeditionsListComponent";
 import { useExpeditions } from "../hooks/useExpeditions";
 import { useUsers } from "../hooks/useUsers";
-import type { ExpeditionFilters, ExpeditionList } from "../types";
+import type { ExpeditionGroupList, ExpeditionFilters } from "../types";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
@@ -38,19 +38,19 @@ export default function ExpeditionsListPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const {
-    expeditionsList,
+    expeditionsGrouped,
     loading,
     error,
-    reloadList,
-    searchList,
+    reloadGrouped,
+    searchGroupWithFilters,
   } = useExpeditions();
   const { users, loading: loadingUsers } = useUsers();
 
   const filteredExpeditions = useMemo(() => {
-    return expeditionsList.filter((expedition) => {
+    return expeditionsGrouped.filter((expedition) => {
       const matchesSearchValue =
         !searchValue ||
-        String(expedition.id).includes(searchValue.trim()) ||
+        String(expedition.referenciaExpedicion).includes(searchValue.trim()) ||
         normalizeText(expedition.direccionDestino).includes(normalizeText(searchValue)) ||
         normalizeText(expedition.username).includes(normalizeText(searchValue));
 
@@ -87,7 +87,7 @@ export default function ExpeditionsListPage() {
         matchesStatus
       );
     });
-  }, [appliedLocalFilters, searchValue, expeditionsList]);
+  }, [appliedLocalFilters, searchValue, expeditionsGrouped]);
 
   if (loading) return <div className="container p-4">Cargando expediciones...</div>;
   if (error) return <div className="container p-4 text-danger">Error: {error}</div>;
@@ -107,7 +107,7 @@ export default function ExpeditionsListPage() {
     setFilters(emptyFilters);
     setAppliedLocalFilters(emptyFilters);
     setSearchValue("");
-    await reloadList();
+    await reloadGrouped();
   };
 
   const handleDeepSearch = async () => {
@@ -122,7 +122,7 @@ export default function ExpeditionsListPage() {
     };
 
     setAppliedLocalFilters(payload);
-    await searchList(payload);
+    await searchGroupWithFilters(payload);
   };
 
   return (
@@ -189,7 +189,7 @@ export default function ExpeditionsListPage() {
 
         <ExpeditionsListComponent
           expeditionsList={filteredExpeditions}
-          onEdit={(expedition: ExpeditionList) => navigate(`/expeditions/${expedition.id}/edit`)}
+          onEdit={(expedition: ExpeditionGroupList) => navigate(`/expeditions/${expedition.referenciaExpedicion}/edit`)}
         />
       </section>
 

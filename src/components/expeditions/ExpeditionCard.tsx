@@ -1,15 +1,15 @@
-import type { ExpeditionList } from "../../types";
+import type { ExpeditionGroupList } from "../../types";
 
 type ExpeditionCardProps = {
-  expedition: ExpeditionList;
-  onEdit?: (expedition: ExpeditionList) => void;
+  expedition: ExpeditionGroupList;
+  onEdit?: (expedition: ExpeditionGroupList) => void;
 };
 
-function formatStatusLabel(status: ExpeditionList["estado"]): string {
+function formatStatusLabel(status: ExpeditionGroupList["estado"]): string {
   return status === "en_transito" ? "En transito" : status === "abierta" ? "Abierta" : "Recibida";
 }
 
-function getStatusClassName(status: ExpeditionList["estado"]): string {
+function getStatusClassName(status: ExpeditionGroupList["estado"]): string {
   if (status === "abierta") {
     return "text-bg-warning";
   }
@@ -93,6 +93,9 @@ console.log("ExpeditionCard render", { expedition, canEdit });
           <div className="col-12 col-md-6">
             <div className="text-muted small mb-1">Fecha envio</div>
             <div>{formatDateForView(expedition.fechaEnvio)}</div>
+          </div>
+          <div className="col-12 col-md-6 mt-4">
+            <div className="text-muted small mb-1">Total expediciones: {expedition.totalExpediciones}</div>
           </div>
         </div>
       </div>

@@ -1,9 +1,9 @@
 import ExpeditionCard from "./ExpeditionCard";
-import type { ExpeditionList } from "../../types";
+import type { ExpeditionGroupList } from "../../types";
 
 type ExpeditionsListProps = {
-  expeditionsList: ExpeditionList[];
-  onEdit?: (expedition: ExpeditionList) => void;
+  expeditionsList: ExpeditionGroupList[];
+  onEdit?: (expedition: ExpeditionGroupList) => void;
 };
 
 export default function ExpeditionsList({ expeditionsList, onEdit }: ExpeditionsListProps) {
@@ -35,7 +35,7 @@ export default function ExpeditionsList({ expeditionsList, onEdit }: Expeditions
       >
       <div className="row g-3">
         {expeditionsList.map((expedition) => (
-          <div key={expedition.id} className="col-12">
+          <div key={expedition.referenciaExpedicion} className="col-12">
             <ExpeditionCard expedition={expedition} onEdit={onEdit} />
           </div>
         ))}
