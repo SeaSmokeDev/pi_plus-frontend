@@ -42,3 +42,10 @@ export interface UpdatePaymentTerminalRequest {
   fechaIngreso?: ApiDate;
   cajaId?: ID | null;
 }
+
+export interface PaymentBoxDetail {
+  modelo: string;
+  marca: string;
+  estado: TerminalStatus;
+  numeroSerie: string;
+}

@@ -4,4 +4,4 @@ export * from "./expeditions.types";
 export * from "./warehouse.types";
 export * from "./pallet.types";
 export * from "./box.types";
-export * from "./terminal.types";
+export * from "./payment.types";
