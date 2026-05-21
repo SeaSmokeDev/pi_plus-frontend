@@ -38,7 +38,7 @@ function formatDateForView(value: string | null): string {
 
 export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardProps) {
   const canEdit = expedition.estado === "abierta";
-console.log("ExpeditionCard render", { expedition, canEdit });
+// console.log("ExpeditionCard render", { expedition, canEdit });
   return (
     <article className="card border-0 shadow-sm h-100">
       <div className="card-body p-3 d-flex flex-column gap-3">

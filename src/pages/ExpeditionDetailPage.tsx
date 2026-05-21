@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { ExpeditionDraftData } from "../types";
+import type { BoxExpeditionDetail, ExpeditionDraftData } from "../types";
 
 const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
 import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 import ExpeditionBoxesPanel from "../components/expeditions/ExpeditionBoxesPanel";
-import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
+// import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
 
 export default function ExpeditionDetailPage() {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function ExpeditionDetailPage() {
   const [draft, setDraft] = useState<ExpeditionDraftData | null>(null);
   // const [form, setForm] = useState<ExpeditionDetailFormData | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(true);
+  const [selectedBoxes, setSelectedBoxes] = useState<BoxExpeditionDetail[]>([]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -120,6 +121,19 @@ export default function ExpeditionDetailPage() {
     );
   }
 
+  function handleAddBox(box: BoxExpeditionDetail) {
+    const alreadyExists = selectedBoxes.some(
+      (selectedBox) => selectedBox.id === box.id,
+    );
+    if (alreadyExists) return;
+    
+    setSelectedBoxes((prev) => [...prev, box]);
+  }
+
+  function handleRemoveBox(boxId: number) {
+    setSelectedBoxes((prev) => prev.filter((box) => box.id !== boxId));
+  }
+
   return (
     <div className="container-fluid p-4 d-flex flex-column gap-4">
       <div className="d-flex flex-column flex-xl-row gap-4 align-items-start">
@@ -140,8 +154,8 @@ export default function ExpeditionDetailPage() {
           className="flex-grow-1 d-flex flex-column gap-4"
           style={{ minWidth: 0 }}
         >
-          <ExpeditionBoxesPanel />
-          <ExpeditionSummaryPanel />
+          <ExpeditionBoxesPanel boxes={selectedBoxes} onAddBox={handleAddBox} onRemoveBox={handleRemoveBox} />
+          {/* <ExpeditionSummaryPanel boxes={selectedBoxes} /> */}
         </div>
       </div>
     </div>

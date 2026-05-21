@@ -14,7 +14,7 @@ export default function ExpeditionSearchBar({
   return (
     <div className="card border-0 shadow-sm">
       <div className="card-body">
-        <div className="row g-3 align-items-center">
+        <div className="row g-3 align-items-end">
           <div className="col-12 col-lg">
             <label htmlFor="expedition-search" className="form-label fw-semibold">
               Buscar expedicion
