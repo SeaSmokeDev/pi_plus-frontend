@@ -8,15 +8,19 @@ export function useBoxesExpedition() {
   const [error, setError] = useState<string | null>(null);
 
 
-    async function loadBoxExpeditionDetail(etiqueta: string) {
+    async function loadBoxExpeditionDetail(etiqueta: string): Promise<BoxExpeditionDetail | null> {
         try {
             setLoading(true);
             setError(null);
+            
             const data = await getBoxExpeditionDetail(etiqueta);
             setBoxes(data);
+            return data;
+
         } catch (error) {
             setError("Error loading box expedition detail");
             console.error("Error fetching box expedition detail:", error);
+            return null;
         } finally {
             setLoading(false);
         }
