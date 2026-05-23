@@ -127,7 +127,7 @@ export default function ExpeditionBoxesPanel({ boxes, onAddBox, onRemoveBox }: E
         </div>
 
         <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0">
+          <table className="table align-middle mb-0">
             <thead className="table-light">
               <tr>
                 <th>Etiqueta</th>
