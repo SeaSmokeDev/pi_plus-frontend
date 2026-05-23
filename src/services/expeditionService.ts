@@ -1,6 +1,6 @@
 import type {
   Expedition,
-  // CreateExpeditionRequest,
+  CreateExpeditionBatchRequest,
   UpdateExpeditionRequest,
   ExpeditionFilters,
   ExpeditionList,
@@ -18,16 +18,6 @@ export function getExpeditionsToday() {
 
 export function getExpedition(id: number) {
   return apiRequest<Expedition>(`/expediciones/${id}`);
-}
-
-export function getExpeditionsByUser(userName: string) {
-  return apiRequest<Expedition[]>(`/expediciones/nombre/usuario/${userName}`);
-}
-
-export function getExpeditionsByAddress(address: string) {
-  return apiRequest<Expedition[]>(
-    `/expediciones/direccion?contiene=${encodeURIComponent(address)}`
-  );
 }
 
 export function getExpeditionsListToday() {
@@ -107,12 +97,12 @@ export function searchExpeditionsList(filters: ExpeditionFilters) {
   );
 }
 
-// export function createExpedition(expedition: CreateExpeditionRequest) {
-//   return apiRequest<Expedition>("/expediciones", {
-//     method: "POST",
-//     body: JSON.stringify(expedition),
-//   });
-// }
+export function createExpeditionBatch(data: CreateExpeditionBatchRequest) {
+  return apiRequest<ExpeditionGroupList>("/expediciones/lote", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
 
 export function updateExpedition(id: number, expedition: UpdateExpeditionRequest) {
   return apiRequest<Expedition>(`/expediciones/${id}`, {
