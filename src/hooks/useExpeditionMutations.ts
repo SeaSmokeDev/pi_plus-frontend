@@ -1,17 +1,18 @@
 import { useState } from "react";
-import type { CreateExpeditionRequest, Expedition } from "../types";
-import { createExpedition } from "../services/expeditionService";
+import type { CreateExpeditionBatchRequest, ExpeditionGroupList  } from "../types";
+import { createExpeditionBatch } from "../services/expeditionService";
 
-export function useExpeditionsMutations() {
+export function useExpeditionMutations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-    async function create(data: CreateExpeditionRequest):Promise<Expedition | null>{
+    async function createBatch(data: CreateExpeditionBatchRequest):Promise<ExpeditionGroupList | null>{
         try {
             setLoading(true);
             setError(null);
-            const newExpedition = await createExpedition(data);
-            return newExpedition;
+
+            return await createExpeditionBatch(data);
+            
         } catch (err) {
             setError("Error al crear la expedición");
             console.error("Error creating expedition:", err);
@@ -22,7 +23,7 @@ export function useExpeditionsMutations() {
     }
 
     return {
-        create,
+        createBatch,
         loading,
         error,
     };
