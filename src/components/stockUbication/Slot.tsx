@@ -1,16 +1,12 @@
-import type { ApiDetallesAlmacen } from "../../mocks/apiDetallesAlmacen";
+import type { WarehouseMapItem } from "../../types/warehouseMap.types";
 
 interface HuecoAlmacenProps {
-  ubicacion: ApiDetallesAlmacen;
-  onClick?: (ubicacion: ApiDetallesAlmacen) => void;
+  ubicacion: WarehouseMapItem;
+  onClick?: (ubicacion: WarehouseMapItem) => void;
 }
 
-export default function HuecoAlmacen({
-  ubicacion,
-  onClick,
-}: HuecoAlmacenProps) {
+export default function HuecoAlmacen({ ubicacion, onClick }: HuecoAlmacenProps) {
   const { ocupacionActual, estanteria, referencia } = ubicacion;
-  console.log("ubicacion:",ubicacion);
   const ratio = ocupacionActual / estanteria.capacidadMaxCajas;
 
   const getBgClass = () => {
@@ -18,8 +14,6 @@ export default function HuecoAlmacen({
     if (ratio < 1) return "bg-warning";
     return "bg-danger";
   };
-
-  
 
   return (
     <div
@@ -30,16 +24,11 @@ export default function HuecoAlmacen({
         cursor: "pointer",
       }}
       title={`Ubicación ${referencia} (${ocupacionActual}/${estanteria.capacidadMaxCajas})`}
-      onClick={() => onClick?.(ubicacion)}>
-
+      onClick={() => onClick?.(ubicacion)}
+    >
       {ocupacionActual}/{estanteria.capacidadMaxCajas}
-      {(ubicacion.pale!==null&&ubicacion.ocupacionActual===0)?(
-        <div className="w-75 d-flex justify-content-center p-1 bg-warning bg-opacity-75">
-
-        </div>
-      ):(null)}
-      <div>
-      </div>
+      {ubicacion.pale !== null && ubicacion.ocupacionActual === 0 ? <div className="w-75 d-flex justify-content-center p-1 bg-warning bg-opacity-75" /> : null}
+      <div />
     </div>
   );
 }

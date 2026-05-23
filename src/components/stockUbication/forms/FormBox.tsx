@@ -1,176 +1,246 @@
-import { useMemo, useState } from "react";
-import type { ApiDetallesAlmacen } from "../../../mocks/apiDetallesAlmacen";
-import { apiDatafonosMock } from "../../../mocks/apiDatafonos";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import type { WarehouseMapItem } from "../../../types/warehouseMap.types";
+import { getMaxCapacityByModel, getTerminalBrands, getTerminalModelsByBrand } from "../../../services/terminalCatalogService";
 
-type CapacidadCaja = 80 | 90 | 100 | 150;
+export type FormBoxMode = "registered" | "manual";
 
-interface NuevaCajaPayload {
+export interface NuevaCajaPayload {
   etiqueta: string;
   modelo: string;
   marca: string;
-  tecnologia: string;
   unidades: number;
-  capacidadTotal: CapacidadCaja;
+  capacidadTotal: number;
   idPale: number | null;
 }
 
 interface FormBoxProps {
-  hueco: ApiDetallesAlmacen;
-  onSubmit: (data: NuevaCajaPayload) => void;
+  hueco: WarehouseMapItem;
+  mode: FormBoxMode;
+  onSubmit: (data: NuevaCajaPayload) => Promise<void>;
   onCancel: () => void;
+  onBack: () => void;
 }
 
 type FormState = {
   etiqueta: string;
   marca: string;
   modelo: string;
-  tecnologia: string;
   unidades: number;
-  capacidadTotal: CapacidadCaja | null;
+  capacidadTotal: number | null;
   idPale: number | null;
 };
 
-function FormBox({ hueco, onSubmit, onCancel }: FormBoxProps) {
+function buildEtiqueta(hueco: WarehouseMapItem): string {
+  const numeroPasillo = String(hueco.pasillo.numero);
+  const estanteria = String(hueco.estanteria.descripcion ?? "").trim().toUpperCase();
+  const nivel = String(hueco.estanteria.nivel);
+  const numeroCaja = String((hueco.cajas?.length ?? 0) + 1);
+  return `${numeroPasillo}-${estanteria}-${nivel}-${numeroCaja}`;
+}
+
+function FormBox({ hueco, mode, onSubmit, onCancel, onBack }: FormBoxProps) {
   const [form, setForm] = useState<FormState>({
-    etiqueta: hueco.referencia,
+    etiqueta: buildEtiqueta(hueco),
     marca: "",
     modelo: "",
-    tecnologia: "",
     unidades: 0,
     capacidadTotal: null,
     idPale: hueco.pale?.id ?? null,
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [catalogError, setCatalogError] = useState("");
+  const [marcas, setMarcas] = useState<string[]>([]);
+  const [modelosPorMarca, setModelosPorMarca] = useState<string[]>([]);
 
-  // ✅ Opciones dinámicas (desde “API”)
-  const marcas = useMemo(() => {
-    return Array.from(new Set(apiDatafonosMock.map((d) => d.marca))).sort((a, b) =>
-      a.localeCompare(b)
-    );
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      etiqueta: buildEtiqueta(hueco),
+    }));
+  }, [hueco]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadBrands = async () => {
+      try {
+        setIsLoadingCatalog(true);
+        setCatalogError("");
+        const brands = await getTerminalBrands();
+        if (!cancelled) {
+          setMarcas(brands);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "No se pudieron cargar las marcas.";
+          setCatalogError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingCatalog(false);
+        }
+      }
+    };
+
+    void loadBrands();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const modelosPorMarca = useMemo(() => {
-    if (!form.marca) return [];
-    return Array.from(
-      new Set(apiDatafonosMock.filter((d) => d.marca === form.marca).map((d) => d.modelo))
-    ).sort((a, b) => a.localeCompare(b));
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadModels = async () => {
+      if (!form.marca) {
+        setModelosPorMarca([]);
+        return;
+      }
+
+      try {
+        setIsLoadingCatalog(true);
+        setCatalogError("");
+        const models = await getTerminalModelsByBrand(form.marca);
+        if (!cancelled) {
+          setModelosPorMarca(models);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "No se pudieron cargar los modelos.";
+          setCatalogError(message);
+          setModelosPorMarca([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingCatalog(false);
+        }
+      }
+    };
+
+    void loadModels();
+
+    return () => {
+      cancelled = true;
+    };
   }, [form.marca]);
 
-  const tecnologiasPorMarcaYModelo = useMemo(() => {
-    if (!form.marca || !form.modelo) return [];
-    return Array.from(
-      new Set(
-        apiDatafonosMock
-          .filter((d) => d.marca === form.marca && d.modelo === form.modelo)
-          .map((d) => d.tecnologia)
-      )
-    ).sort((a, b) => a.localeCompare(b));
-  }, [form.marca, form.modelo]);
+  useEffect(() => {
+    let cancelled = false;
 
-  // ✅ Handlers
-  const handleEtiquetaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, etiqueta: e.target.value }));
-  };
+    const loadMaxCapacity = async () => {
+      if (!form.modelo || mode === "manual") {
+        setForm((prev) => ({ ...prev, capacidadTotal: null }));
+        return;
+      }
 
-  const handleMarcaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const marca = e.target.value;
+      try {
+        setIsLoadingCatalog(true);
+        const maxCapacity = await getMaxCapacityByModel(form.modelo);
+        if (!cancelled) {
+          setForm((prev) => ({ ...prev, capacidadTotal: maxCapacity }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "No se pudo obtener la capacidad máxima.";
+          setCatalogError(message);
+          setForm((prev) => ({ ...prev, capacidadTotal: null }));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingCatalog(false);
+        }
+      }
+    };
 
-    // Al cambiar marca, reseteamos modelo/tecnologia/capacidad
+    void loadMaxCapacity();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.modelo, mode]);
+
+  const handleMarcaChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const marca = event.target.value;
     setForm((prev) => ({
       ...prev,
       marca,
       modelo: "",
-      tecnologia: "",
-      capacidadTotal: null,
+      capacidadTotal: prev.capacidadTotal,
     }));
   };
 
-  const handleModeloChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const modelo = e.target.value;
-
-    // Al cambiar modelo, reseteamos tecnologia/capacidad
+  const handleModeloChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const modelo = event.target.value;
     setForm((prev) => ({
       ...prev,
       modelo,
-      tecnologia: "",
-      capacidadTotal: null,
     }));
   };
 
-  const handleTecnologiaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const tecnologia = e.target.value;
-
-    // Al elegir tecnologia, ya podemos calcular capacidad
-    const match = apiDatafonosMock.find(
-      (d) => d.marca === form.marca && d.modelo === form.modelo && d.tecnologia === tecnologia
-    );
-
+  const handleUnidadesChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const rawValue = event.target.value;
+    const normalized = rawValue.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+    const value = Number(normalized);
     setForm((prev) => ({
       ...prev,
-      tecnologia,
-      capacidadTotal: match?.capacidadCaja ?? null,
-      // opcional: resetear unidades si quieres
-      // unidades: 0,
+      unidades: normalized === "" ? 0 : Number.isFinite(value) ? value : 0,
     }));
   };
 
-  const handleUnidadesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setForm((prev) => ({
-      ...prev,
-      unidades: Number.isFinite(value) ? value : 0,
-    }));
+  const capacidadActual = form.capacidadTotal;
+  const unidadesInvalidas = mode === "registered" && capacidadActual !== null && form.unidades > capacidadActual;
+
+  const canSubmit =
+    Boolean(form.etiqueta.trim()) &&
+    Boolean(form.marca.trim()) &&
+    Boolean(form.modelo.trim()) &&
+    capacidadActual !== null &&
+    capacidadActual > 0 &&
+    (mode === "manual" || form.unidades >= 0) &&
+    !unidadesInvalidas;
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (!canSubmit || capacidadActual === null) {
+      setErrorMessage("Revisa los datos obligatorios antes de guardar.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await onSubmit({
+        etiqueta: form.etiqueta.trim(),
+        modelo: form.modelo.trim(),
+        marca: form.marca.trim(),
+        unidades: mode === "manual" ? 0 : form.unidades,
+        capacidadTotal: capacidadActual,
+        idPale: form.idPale,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo guardar la caja.";
+      setErrorMessage(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!form.marca || !form.modelo || !form.tecnologia) return;
-    if (!form.capacidadTotal) return;
-
-    // Validación básica
-    if (form.unidades < 0) return;
-    if (form.unidades > form.capacidadTotal) return;
-
-    onSubmit({
-      etiqueta: form.etiqueta,
-      modelo: form.modelo,
-      marca: form.marca,
-      tecnologia: form.tecnologia,
-      unidades: form.unidades,
-      capacidadTotal: form.capacidadTotal,
-      idPale: form.idPale,
-    });
-  };
-
-  const unidadesInvalidas =
-    form.capacidadTotal !== null && form.unidades > form.capacidadTotal;
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Etiqueta */}
-      <div className="mb-3">
+    <form onSubmit={handleSubmit} className="stock-box-form">
+      <div className="mb-3 stock-box-form__group">
         <label className="form-label">Etiqueta</label>
-        <input
-          className="form-control"
-          value={form.etiqueta}
-          onChange={handleEtiquetaChange}
-          required
-        />
-        <div className="form-text">
-          Sugerencia: usa la referencia del hueco (ej: {hueco.referencia})
-        </div>
+        <input className="form-control" value={form.etiqueta} readOnly required />
+        <div className="form-text">Formato: Pasillo-Estantería-Nivel-NºCaja (ej: 2-C-1-3)</div>
       </div>
 
-      {/* Marca */}
-      <div className="mb-3">
+      <div className="mb-3 stock-box-form__group">
         <label className="form-label">Marca</label>
-        <select
-          className="form-select"
-          value={form.marca}
-          onChange={handleMarcaChange}
-          required
-        >
-          <option value="">Selecciona una marca</option>
+        <select className="form-select" value={form.marca} onChange={handleMarcaChange} required disabled={isLoadingCatalog || marcas.length === 0}>
+          <option value="">{isLoadingCatalog ? "Cargando marcas..." : "Selecciona una marca"}</option>
           {marcas.map((m) => (
             <option key={m} value={m}>
               {m}
@@ -179,19 +249,10 @@ function FormBox({ hueco, onSubmit, onCancel }: FormBoxProps) {
         </select>
       </div>
 
-      {/* Modelo (depende de Marca) */}
-      <div className="mb-3">
+      <div className="mb-3 stock-box-form__group">
         <label className="form-label">Modelo</label>
-        <select
-          className="form-select"
-          value={form.modelo}
-          onChange={handleModeloChange}
-          required
-          disabled={!form.marca}
-        >
-          <option value="">
-            {form.marca ? "Selecciona un modelo" : "Selecciona una marca primero"}
-          </option>
+        <select className="form-select" value={form.modelo} onChange={handleModeloChange} required disabled={!form.marca || isLoadingCatalog}>
+          <option value="">{form.marca ? "Selecciona un modelo" : "Selecciona una marca primero"}</option>
           {modelosPorMarca.map((modelo) => (
             <option key={modelo} value={modelo}>
               {modelo}
@@ -200,63 +261,65 @@ function FormBox({ hueco, onSubmit, onCancel }: FormBoxProps) {
         </select>
       </div>
 
-      {/* Tecnología (depende de Marca + Modelo) */}
-      <div className="mb-3">
-        <label className="form-label">Tecnología</label>
-        <select
-          className="form-select"
-          value={form.tecnologia}
-          onChange={handleTecnologiaChange}
-          required
-          disabled={!form.marca || !form.modelo}
-        >
-          <option value="">
-            {form.modelo
-              ? "Selecciona una tecnología"
-              : "Selecciona marca y modelo primero"}
-          </option>
-          {tecnologiasPorMarcaYModelo.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-      </div>
+      {mode === "registered" && (
+        <div className="mb-3 stock-box-form__group">
+          <label className="form-label">Unidades</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className={`form-control ${unidadesInvalidas ? "is-invalid" : ""}`}
+            value={String(form.unidades)}
+            onChange={handleUnidadesChange}
+            aria-label="Unidades"
+          />
+          {unidadesInvalidas && <div className="invalid-feedback">No puede superar la capacidad máxima ({capacidadActual})</div>}
+        </div>
+      )}
 
-      {/* Unidades */}
-      <div className="mb-3">
-        <label className="form-label">Unidades</label>
-        <input
-          type="number"
-          className={`form-control ${unidadesInvalidas ? "is-invalid" : ""}`}
-          value={form.unidades}
-          onChange={handleUnidadesChange}
-          min={0}
-          max={form.capacidadTotal ?? undefined}
-        />
-        {unidadesInvalidas && (
-          <div className="invalid-feedback">
-            No puede superar la capacidad máxima ({form.capacidadTotal})
-          </div>
+      <div className="mb-3 stock-box-form__group">
+        <label className="form-label">Capacidad máxima</label>
+        {mode === "registered" ? (
+          <input
+            type="number"
+            className="form-control"
+            value={form.capacidadTotal ?? ""}
+            readOnly
+            placeholder={form.modelo ? "Calculando capacidad..." : "Selecciona un modelo"}
+            required={false}
+          />
+        ) : (
+          <input
+            type="number"
+            className="form-control"
+            value={form.capacidadTotal ?? ""}
+            onChange={(event) =>
+              setForm((prev) => ({
+                ...prev,
+                capacidadTotal: Number.isFinite(Number(event.target.value)) ? Number(event.target.value) : null,
+              }))
+            }
+            min={1}
+            placeholder="Introduce capacidad máxima"
+            required
+          />
         )}
       </div>
 
-      {/* Capacidad (readonly) */}
-      <div className="mb-3">
-        <label className="form-label">Capacidad máxima</label>
-        <input
-          className="form-control"
-          value={form.capacidadTotal ?? ""}
-          readOnly
-          placeholder="Se calcula al elegir tecnología"
-        />
-      </div>
+      {catalogError && <div className="alert alert-warning py-2">{catalogError}</div>}
+      {errorMessage && <div className="alert alert-danger py-2">{errorMessage}</div>}
 
-      <div className="d-flex gap-2">
-        <button className="btn btn-primary" type="submit">
-          Guardar
+      <div className="d-flex gap-2 stock-box-form__actions">
+        <button className="btn stock-box-form__btn stock-box-form__btn--back" type="button" onClick={onBack} disabled={isSaving}>
+          <i className="bi bi-arrow-left-short" aria-hidden="true" />
+          Volver
         </button>
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+        <button className="btn stock-box-form__btn stock-box-form__btn--save" type="submit" disabled={!canSubmit || isSaving || Boolean(catalogError)}>
+          <i className="bi bi-check2-circle" aria-hidden="true" />
+          {isSaving ? "Guardando..." : "Guardar"}
+        </button>
+        <button type="button" className="btn stock-box-form__btn stock-box-form__btn--cancel" onClick={onCancel} disabled={isSaving}>
+          <i className="bi bi-x-circle" aria-hidden="true" />
           Cancelar
         </button>
       </div>

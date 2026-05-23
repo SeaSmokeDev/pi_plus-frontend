@@ -4,13 +4,12 @@ interface AddBoxButtonProps {
 
 function AddBoxButton({ onClick }: AddBoxButtonProps) {
   return (
-    <div className="d-flex justify-content-end">
-      <button
-        onClick={onClick}
-        className="btn btn-sm btn-outline-primary"
-      >
+    <div className="stock-slot-add-box">
+      <button type="button" onClick={onClick} className="stock-slot-add-box__button">
+        <span className="stock-slot-add-box__icon" aria-hidden="true">
+          <i className="bi bi-box-seam" />
+        </span>
         Agregar caja
-        <span className="ms-1 material-symbols-outlined">box_add</span>
       </button>
     </div>
   );
