@@ -1,10 +1,10 @@
 import type {
   Expedition,
   CreateExpeditionBatchRequest,
-  UpdateExpeditionRequest,
   ExpeditionFilters,
   ExpeditionList,
   ExpeditionGroupList,
+  ExpeditionQuickView,
 } from "../types";
 import { apiRequest } from "./apiClient";
 
@@ -97,6 +97,12 @@ export function searchExpeditionsList(filters: ExpeditionFilters) {
   );
 }
 
+export function getExpeditionQuickView(reference: string) {
+  return apiRequest<ExpeditionQuickView>(
+    `/expediciones/referencia/${reference}/resumen`
+  );
+}
+
 export function createExpeditionBatch(data: CreateExpeditionBatchRequest) {
   return apiRequest<ExpeditionGroupList>("/expediciones/lote", {
     method: "POST",
@@ -104,12 +110,6 @@ export function createExpeditionBatch(data: CreateExpeditionBatchRequest) {
   });
 }
 
-export function updateExpedition(id: number, expedition: UpdateExpeditionRequest) {
-  return apiRequest<Expedition>(`/expediciones/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(expedition),
-  });
-}
 
 export function deleteExpedition(id: number) {
   return apiRequest<void>(`/expediciones/${id}`, {
