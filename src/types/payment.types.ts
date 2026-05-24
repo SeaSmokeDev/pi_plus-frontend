@@ -49,3 +49,10 @@ export interface PaymentBoxDetail {
   estado: TerminalStatus;
   numeroSerie: string;
 }
+
+export interface ExpeditionQuickViewPayment {
+  modelo: string;
+  marca: string;
+  estado: TerminalStatus;
+  numeroSerie: string;
+}

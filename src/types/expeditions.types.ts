@@ -2,6 +2,8 @@ import type { ApiDate, ID } from "./common.types";
 
 export type ExpeditionStatus = "abierta" | "en_transito" | "recibida";
 
+import type { ExpeditionQuickViewPayment } from "./payment.types";
+
 export interface Expedition {
   id: ID;
   fechaCreacion: ApiDate;
@@ -82,11 +84,15 @@ export interface CreateExpeditionBatchRequest {
   cajaIds: ID[];
 }
 
-export interface UpdateExpeditionRequest {
-  direccionDestino?: string;
-  paquetes?: number | null;
-  peso?: number | null;
-  notas?: string | null;
-  usuarioId?: ID;
-  estado?: ExpeditionStatus;
+export interface ExpeditionQuickView {
+  referenciaExpedicion: string;
+  username: string;
+  fechaEnvio: ApiDate | null;
+  direccionDestino: string;
+  paquetes: number | null;
+  peso: number | null;
+  notas: string | null;
+  totalExpediciones: number;
+  totalTerminales: number;
+  terminales: ExpeditionQuickViewPayment[];
 }
