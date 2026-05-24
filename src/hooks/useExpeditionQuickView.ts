@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { ExpeditionQuickView } from "../types";
 import { getExpeditionQuickView } from "../services/expeditionService";
 
@@ -7,7 +7,7 @@ export function useExpeditionQuickView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadQuickView(reference: string) {
+  const loadQuickView = useCallback(async (reference: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -20,12 +20,12 @@ export function useExpeditionQuickView() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  function clearQuickView() {
+  const clearQuickView = useCallback(() => {
     setQuickView(null);
     setError(null);
-  }
+  }, []);
 
   return {
     quickView,

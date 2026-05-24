@@ -84,10 +84,7 @@ export default function ExpeditionDetailPage() {
   }
 
   function handleCancel() {
-    if (!isEditMode) {
-      sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
-    }
-
+    sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
     navigate("/expeditions");
   }
 

@@ -30,12 +30,12 @@ export default function ExpeditionQuickViewModal({
   } = useExpeditionQuickView();
 
   useEffect(() => {
-    void loadQuickView(reference);
+  void loadQuickView(reference);
 
-    return () => {
-      clearQuickView();
-    };
-  }, [reference]);
+  return () => {
+    clearQuickView();
+  };
+}, [reference, loadQuickView, clearQuickView]);
 
   return (
     <div
