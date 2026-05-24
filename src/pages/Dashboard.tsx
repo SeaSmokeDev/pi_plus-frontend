@@ -3,6 +3,7 @@ import GridBoard, { type DashboardKpis } from "../components/dashboard/GridBoard
 import ModelsUsageCard from "../components/dashboard/ModelsUsageCard";
 import OperationalAlertsChart from "../components/dashboard/OperationalAlertsChart";
 import RecentActivity from "../components/dashboard/RecentActivity";
+import WarehouseOccupationChart from "../components/dashboard/WarehouseOccupationChart";
 import type { ExpeditionList, PaymentTerminal } from "../types";
 import type { WarehouseMapItem } from "../types/warehouseMap.types";
 import {
@@ -208,62 +209,13 @@ export default function Dashboard() {
       <GridBoard kpis={kpis} />
 
       <div className="row g-4">
-        <div className="col-12 col-xl-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-white fw-bold">Ocupación almacén</div>
-            <div className="card-body">
-              {mapaState.loading ? (
-                <div className="text-muted">Cargando...</div>
-              ) : mapaState.error ? (
-                <div className="text-danger small">{mapaState.error}</div>
-              ) : (
-                <div className="d-flex flex-column gap-2">
-                  <div>Huecos totales: <strong>{ocupacion.total}</strong></div>
-                  <div>Huecos ocupados: <strong>{ocupacion.ocupados}</strong></div>
-                  <div>Huecos libres: <strong>{ocupacion.libres}</strong></div>
-                  <div>Ocupación media: <strong>{ocupacion.media}%</strong></div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="col-12 col-xl-8">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-white fw-bold">Distribución por pasillo</div>
-            <div className="card-body">
-              {mapaState.loading ? (
-                <div className="text-muted">Cargando...</div>
-              ) : mapaState.error ? (
-                <div className="text-danger small">{mapaState.error}</div>
-              ) : distribucionPasillo.length === 0 ? (
-                <div className="text-muted">Sin datos de pasillos.</div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-sm align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th>Pasillo</th>
-                        <th>Ocupados</th>
-                        <th>Libres</th>
-                        <th>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {distribucionPasillo.map((item) => (
-                        <tr key={item.pasillo}>
-                          <td>{item.pasillo}</td>
-                          <td>{item.ocupados}</td>
-                          <td>{item.libres}</td>
-                          <td>{item.total}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="col-12">
+          <WarehouseOccupationChart
+            loading={mapaState.loading}
+            error={mapaState.error}
+            ocupacion={ocupacion}
+            distribucionPasillo={distribucionPasillo}
+          />
         </div>
 
         <div className="col-12 col-xl-6">

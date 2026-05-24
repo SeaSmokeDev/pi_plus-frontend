@@ -103,8 +103,12 @@ export default function SNSearchPage() {
 
       <SNSearchDeleteConfirmModal
         isOpen={isDeleteModalOpen}
-        serialNumber={terminal?.numeroSerie}
-        isDeleting={isDeleting}
+        isLoading={isDeleting}
+        title="Confirmar eliminación"
+        message={`¿Seguro que quieres eliminar la terminal ${terminal?.numeroSerie ?? ""}? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
         onCancel={closeDeleteModal}
         onConfirm={handleDeleteBySn}
       />

@@ -1,4 +1,5 @@
 import { apiUrl } from "../auth/session";
+import { ApiHttpError, apiRequest } from "./apiClient";
 
 export type CreateBoxPayload = {
   etiqueta: string;
@@ -6,14 +7,22 @@ export type CreateBoxPayload = {
   marca: string;
   unidades: number;
   capacidadTotal: number;
-  idPale: number | null;
+  paletId?: number | null;
 };
 
 export type CreatedBox = {
   id: number;
   etiqueta: string;
   modeloProducto?: string;
-  id_pale?: number | null;
+  paletId?: number | null;
+};
+
+export type FreeBox = {
+  id: number;
+  etiqueta: string;
+  modeloProducto: string;
+  maxCapacity: number;
+  palet?: { id: number } | null;
 };
 
 type CreateBoxApiResponse = {
@@ -29,12 +38,30 @@ type CreateBoxApiResponse = {
   error?: string;
 };
 
+export interface BoxCapacityResponse {
+  cajaId: number;
+  terminalesActuales: number;
+  capacidadMaxima: number;
+}
+
+export type AssignBoxToPalletPayload = {
+  paletId: number;
+};
+
+function sanitizeBackendError(message?: string): string {
+  if (!message) return "No se pudo completar la operación con cajas.";
+  if (message.includes("Duplicate entry") || message.includes("constraint [cajas.etiqueta]")) {
+    return "Ya existe una caja con esa etiqueta. Usa una etiqueta diferente o selecciona una caja registrada.";
+  }
+  return message;
+}
+
 export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> {
   const requestBody = {
     etiqueta: payload.etiqueta,
     modeloProducto: payload.modelo,
     maxCapacity: payload.capacidadTotal,
-    id_pale: payload.idPale,
+    paletId: typeof payload.paletId === "number" ? payload.paletId : null,
   };
 
   console.log("[createBox] request payload:", requestBody);
@@ -55,7 +82,10 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
   console.log("[createBox] response body:", data);
 
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || "No se pudo crear la caja.");
+    if (response.status === 403) {
+      throw new Error("Sesión expirada o sin permisos para crear cajas. Inicia sesión de nuevo.");
+    }
+    throw new Error(sanitizeBackendError(data?.message || data?.error));
   }
 
   const created = data?.insertCaja || data?.caja || data?.box || data?.createdBox;
@@ -69,7 +99,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
       id: data.id,
       etiqueta: payload.etiqueta,
       modeloProducto: payload.modelo,
-      id_pale: payload.idPale,
+      paletId: payload.paletId ?? null,
     };
   }
 
@@ -78,7 +108,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
       id: data.cajaId,
       etiqueta: payload.etiqueta,
       modeloProducto: payload.modelo,
-      id_pale: payload.idPale,
+      paletId: payload.paletId ?? null,
     };
   }
 
@@ -87,7 +117,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
       id: data?.data?.id ?? (data?.data?.cajaId as number),
       etiqueta: payload.etiqueta,
       modeloProducto: payload.modelo,
-      id_pale: payload.idPale,
+      paletId: payload.paletId ?? null,
     };
   }
 
@@ -99,10 +129,35 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
         id: Number(match[1]),
         etiqueta: payload.etiqueta,
         modeloProducto: payload.modelo,
-        id_pale: payload.idPale,
+        paletId: payload.paletId ?? null,
       };
     }
   }
 
   throw new Error("La API no devolvió el identificador de la caja creada.");
+}
+
+export async function getBoxCapacity(cajaId: number): Promise<BoxCapacityResponse> {
+  return apiRequest<BoxCapacityResponse>(`/cajas/${cajaId}/capacidad`);
+}
+
+export async function getFreeBoxes(): Promise<FreeBox[]> {
+  return apiRequest<FreeBox[]>("/cajas/free");
+}
+
+export async function assignBoxToPallet(cajaId: number, paletId: number): Promise<{ success?: boolean; mensaje?: string }> {
+  try {
+    return await apiRequest<{ success?: boolean; mensaje?: string }>(`/cajas/${cajaId}/palet`, {
+      method: "PATCH",
+      body: JSON.stringify({ paletId }),
+    });
+  } catch (error) {
+    if (error instanceof ApiHttpError && error.status === 403) {
+      throw new Error("Sesión expirada o sin permisos para asignar cajas. Inicia sesión de nuevo.");
+    }
+    if (error instanceof ApiHttpError) {
+      throw new Error(sanitizeBackendError(error.message));
+    }
+    throw error;
+  }
 }

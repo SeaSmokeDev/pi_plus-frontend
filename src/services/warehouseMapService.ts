@@ -27,3 +27,19 @@ export async function getWarehouseMap(query: WarehouseMapQuery = {}): Promise<Wa
   console.log("[GET] /api/ubicaciones/mapa response", { total: items.length });
   return items;
 }
+
+export type UnassignPalletFromUbicacionResponse = {
+  success: boolean;
+  mensaje: string;
+  paletId: number;
+  ubicacionAlmacenId: number;
+};
+
+export async function unassignPalletFromUbicacion(
+  ubicacionId: number,
+  paletId: number
+): Promise<UnassignPalletFromUbicacionResponse> {
+  return apiRequest<UnassignPalletFromUbicacionResponse>(`/ubicaciones/${ubicacionId}/palets/${paletId}`, {
+    method: "DELETE",
+  });
+}

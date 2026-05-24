@@ -38,6 +38,28 @@ export type AsociarTerminalesResponse = {
   errores: Array<{ sn: string; motivo: string }>;
 };
 
+export type DesasignarTerminalResponse = {
+  success: boolean;
+  mensaje: string;
+  sn: string;
+  cajaId: number;
+};
+
+export type CajaDetailResponse = {
+  id: number;
+  etiqueta?: string | null;
+  modeloProducto?: string | null;
+  maxCapacity?: number | null;
+  paletId?: number | null;
+  terminales?: Array<{
+    id?: number;
+    numeroSerie?: string | null;
+    marca?: string | null;
+    modelo?: string | null;
+    estado?: string | null;
+  }> | null;
+};
+
 export async function validateTerminalForBox(cajaId: number, payload: ValidarTerminalRequest): Promise<ValidarTerminalResponse> {
   return apiRequest<ValidarTerminalResponse>(`/cajas/${cajaId}/validar-terminal`, {
     method: "POST",
@@ -52,5 +74,15 @@ export async function associateTerminalsToBox(
   return apiRequest<AsociarTerminalesResponse>(`/cajas/${cajaId}/terminales`, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function getCajaById(cajaId: number): Promise<CajaDetailResponse> {
+  return apiRequest<CajaDetailResponse>(`/cajas/${cajaId}`);
+}
+
+export async function unassignTerminalFromBox(cajaId: number, sn: string): Promise<DesasignarTerminalResponse> {
+  return apiRequest<DesasignarTerminalResponse>(`/cajas/${cajaId}/terminales/${encodeURIComponent(sn)}`, {
+    method: "DELETE",
   });
 }

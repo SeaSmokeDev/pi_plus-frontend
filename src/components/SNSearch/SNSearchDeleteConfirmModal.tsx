@@ -1,15 +1,23 @@
 type SNSearchDeleteConfirmModalProps = {
   isOpen: boolean;
-  serialNumber?: string;
-  isDeleting: boolean;
+  isLoading: boolean;
+  title?: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  confirmVariant?: "danger" | "primary";
   onCancel: () => void;
   onConfirm: () => void;
 };
 
 export default function SNSearchDeleteConfirmModal({
   isOpen,
-  serialNumber,
-  isDeleting,
+  isLoading,
+  title = "Confirmar acción",
+  message,
+  confirmLabel = "Confirmar",
+  cancelLabel = "Cancelar",
+  confirmVariant = "danger",
   onCancel,
   onConfirm,
 }: SNSearchDeleteConfirmModalProps) {
@@ -24,22 +32,25 @@ export default function SNSearchDeleteConfirmModal({
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content border-0 shadow">
             <div className="modal-header">
-              <h3 className="modal-title h5 mb-0">Confirmar eliminación</h3>
-              <button type="button" className="btn-close" aria-label="Cerrar" onClick={onCancel} disabled={isDeleting} />
+              <h3 className="modal-title h5 mb-0">{title}</h3>
+              <button type="button" className="btn-close" aria-label="Cerrar" onClick={onCancel} disabled={isLoading} />
             </div>
 
             <div className="modal-body">
-              <p className="mb-0">
-                ¿Seguro que quieres eliminar la terminal <strong>{serialNumber || ""}</strong>? Esta acción no se puede deshacer.
-              </p>
+              <p className="mb-0">{message}</p>
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={isDeleting}>
-                Cancelar
+              <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={isLoading}>
+                {cancelLabel}
               </button>
-              <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={isDeleting}>
-                {isDeleting ? "Eliminando..." : "Eliminar"}
+              <button
+                type="button"
+                className={`btn ${confirmVariant === "danger" ? "btn-danger" : "btn-primary"}`}
+                onClick={onConfirm}
+                disabled={isLoading}
+              >
+                {isLoading ? "Procesando..." : confirmLabel}
               </button>
             </div>
           </div>

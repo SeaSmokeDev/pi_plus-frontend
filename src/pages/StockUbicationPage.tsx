@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import SNSearchDeleteConfirmModal from "../components/SNSearch/SNSearchDeleteConfirmModal";
 import Aisle from "../components/stockUbication/Aisle";
 import AddPalletButton from "../components/stockUbication/AddPalletButton";
 import AddBoxButton from "../components/stockUbication/AddBoxButton";
 import FormBox, { type FormBoxMode, type NuevaCajaPayload } from "../components/stockUbication/forms/FormBox";
 import FormPallet from "../components/stockUbication/forms/FormPallet";
-import { createBox } from "../services/boxService";
-import { createPallet } from "../services/palletService";
-import { getWarehouseMap } from "../services/warehouseMapService";
+import { assignBoxToPallet, createBox, getBoxCapacity, getFreeBoxes, type BoxCapacityResponse, type FreeBox } from "../services/boxService";
+import { createPallet, unassignBoxFromPallet } from "../services/palletService";
+import { getWarehouseMap, unassignPalletFromUbicacion } from "../services/warehouseMapService";
 import { ApiHttpError } from "../services/apiClient";
 import type { WarehouseMapItem } from "../types/warehouseMap.types";
 import "../styles/StockUbicationPage.scss";
 
 export default function StockUbicationPage() {
+  const location = useLocation();
   const navigate = useNavigate();
+  const { ubicacionId } = useParams<{ ubicacionId?: string }>();
   const [detalles, setDetalles] = useState<WarehouseMapItem[]>([]);
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -22,10 +25,22 @@ export default function StockUbicationPage() {
   const [huecoActivo, setHuecoActivo] = useState<WarehouseMapItem | null>(null);
   const [mostrarFormPallet, setMostrarFormPallet] = useState(false);
   const [formBoxMode, setFormBoxMode] = useState<FormBoxMode | null>(null);
+  const [freeBoxes, setFreeBoxes] = useState<FreeBox[]>([]);
+  const [isLoadingFreeBoxes, setIsLoadingFreeBoxes] = useState(false);
+  const [boxCapacities, setBoxCapacities] = useState<Record<number, BoxCapacityResponse | "loading" | "error">>({});
+  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isUnassigningBoxId, setIsUnassigningBoxId] = useState<number | null>(null);
+  const [isUnassigningPallet, setIsUnassigningPallet] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    | { type: "box"; paletId: number; cajaId: number }
+    | { type: "pallet"; ubicacionId: number; paletId: number }
+    | null
+  >(null);
 
   const abrirFormCaja = (hueco: WarehouseMapItem) => {
     setHuecoActivo(hueco);
     setFormBoxMode(null);
+    setFreeBoxes([]);
     setMostrarFormCaja(true);
   };
 
@@ -72,6 +87,18 @@ export default function StockUbicationPage() {
 
   const pasillosMap = new Map<number, WarehouseMapItem[]>();
 
+  const getCapacityLabel = (cajaId: number) => {
+    const capacity = boxCapacities[cajaId];
+    if (typeof capacity === "undefined" || capacity === "loading") return "--/--";
+    if (capacity === "error") return "N/A";
+    return `${capacity.terminalesActuales}/${capacity.capacidadMaxima}`;
+  };
+
+  const isCapacityOverflow = (cajaId: number) => {
+    const capacity = boxCapacities[cajaId];
+    return typeof capacity === "object" && capacity !== null && capacity.terminalesActuales > capacity.capacidadMaxima;
+  };
+
   detalles.forEach((datoAlmacen) => {
     const pasilloId = datoAlmacen.pasillo.id;
 
@@ -88,7 +115,8 @@ export default function StockUbicationPage() {
       pasillo: ubicacion.pasillo.numero,
       nivel: ubicacion.estanteria.nivel,
     });
-    setHuecoSeleccionado(ubicacion);
+    setActionMessage(null);
+    navigate(`/stock/ubicacion/${ubicacion.idHueco}`);
   };
 
   const handleCreateBox = async (payload: NuevaCajaPayload) => {
@@ -99,6 +127,7 @@ export default function StockUbicationPage() {
 
     navigate(`/stock/boxes/${created.id}/terminals`, {
       state: {
+        huecoId: huecoActivo?.idHueco,
         ubicacion: `${huecoActivo?.referencia ?? ""} · Pasillo ${huecoActivo?.pasillo.numero ?? "-"} · Estantería ${huecoActivo?.estanteria.descripcion ?? "-"}${typeof huecoActivo?.estanteria.nivel === "number" ? `/${huecoActivo.estanteria.nivel}` : ""}`,
         etiqueta: payload.etiqueta,
         marca: payload.marca,
@@ -107,6 +136,20 @@ export default function StockUbicationPage() {
         unidades: payload.unidades,
       },
     });
+  };
+
+  const handleAssignExistingBox = async (boxId: number) => {
+    const paletId = huecoActivo?.pale?.id ?? null;
+    if (!paletId) {
+      throw new Error("No hay palé seleccionado para asignar la caja.");
+    }
+
+    await assignBoxToPallet(boxId, paletId);
+    setMostrarFormCaja(false);
+    setFormBoxMode(null);
+    const items = await loadMap({ keepError: true });
+    refreshSelectedHueco(items);
+    setActionMessage({ type: "success", text: "Caja asignada correctamente al palé." });
   };
 
   const handleOpenBoxTerminals = (caja: WarehouseMapItem["cajas"][number]) => {
@@ -119,6 +162,7 @@ export default function StockUbicationPage() {
 
     navigate(`/stock/boxes/${caja.id}/terminals`, {
       state: {
+        huecoId: huecoSeleccionado?.idHueco,
         ubicacion: `${huecoSeleccionado?.referencia ?? ""} · Pasillo ${huecoSeleccionado?.pasillo.numero ?? "-"} · Estantería ${huecoSeleccionado?.estanteria.descripcion ?? "-"}${typeof huecoSeleccionado?.estanteria.nivel === "number" ? `/${huecoSeleccionado.estanteria.nivel}` : ""}`,
         etiqueta: caja.etiqueta,
         marca: caja.terminales?.[0]?.marca ?? "",
@@ -141,6 +185,142 @@ export default function StockUbicationPage() {
     }
   };
 
+  const refreshMapAndSelectedHueco = async () => {
+    const items = await getWarehouseMap();
+    setDetalles(items);
+    refreshSelectedHueco(items);
+  };
+
+  const handleUnassignBox = async (paletId: number, cajaId: number) => {
+    setActionMessage(null);
+    setIsUnassigningBoxId(cajaId);
+    try {
+      const response = await unassignBoxFromPallet(paletId, cajaId);
+      setActionMessage({ type: "success", text: response.mensaje || "Caja desasignada del palé con éxito." });
+      await refreshMapAndSelectedHueco();
+    } catch (error) {
+      const message = error instanceof ApiHttpError ? error.message : "No se pudo desasignar la caja.";
+      setActionMessage({ type: "error", text: message });
+    } finally {
+      setIsUnassigningBoxId(null);
+    }
+  };
+
+  const handleUnassignPallet = async (ubicacionId: number, paletId: number) => {
+
+    setActionMessage(null);
+    setIsUnassigningPallet(true);
+    try {
+      const response = await unassignPalletFromUbicacion(ubicacionId, paletId);
+      setActionMessage({ type: "success", text: response.mensaje || "Palé desasignado del habitáculo con éxito." });
+      await refreshMapAndSelectedHueco();
+    } catch (error) {
+      const message = error instanceof ApiHttpError ? error.message : "No se pudo desasignar el palé.";
+      setActionMessage({ type: "error", text: message });
+    } finally {
+      setIsUnassigningPallet(false);
+    }
+  };
+
+  useEffect(() => {
+    const cajas = huecoSeleccionado?.cajas ?? [];
+    if (cajas.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCapacities = async () => {
+      const entries = await Promise.all(
+        cajas.map(async (caja) => {
+          try {
+            const capacity = await getBoxCapacity(caja.id);
+            return [caja.id, capacity] as const;
+          } catch (error) {
+            console.warn(`No se pudo cargar capacidad para caja ${caja.id}`, error);
+            return [caja.id, "error"] as const;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setBoxCapacities((prev) => {
+        const next = { ...prev };
+        for (const [id, capacity] of entries) {
+          next[id] = capacity;
+        }
+        return next;
+      });
+    };
+
+    for (const caja of cajas) {
+      setBoxCapacities((prev) => (typeof prev[caja.id] === "undefined" ? { ...prev, [caja.id]: "loading" } : prev));
+    }
+
+    void loadCapacities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [huecoSeleccionado]);
+
+  useEffect(() => {
+    if (!actionMessage) return;
+    const timeout = window.setTimeout(() => setActionMessage(null), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [actionMessage]);
+
+  useEffect(() => {
+    const navState = (location.state as { actionFeedback?: string } | null) ?? null;
+    if (navState?.actionFeedback) {
+      setActionMessage({ type: "success", text: navState.actionFeedback });
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    if (!ubicacionId || detalles.length === 0) return;
+    const id = Number(ubicacionId);
+    if (!Number.isFinite(id)) return;
+    const selected = detalles.find((item) => item.idHueco === id) ?? null;
+    setHuecoSeleccionado(selected ?? null);
+    if (selected) {
+      setHuecoActivo(selected);
+    }
+  }, [ubicacionId, detalles]);
+
+  useEffect(() => {
+    if (!mostrarFormCaja || formBoxMode !== "registered") return;
+
+    let cancelled = false;
+
+    const loadFreeBoxes = async () => {
+      try {
+        setIsLoadingFreeBoxes(true);
+        const boxes = await getFreeBoxes();
+        if (!cancelled) {
+          setFreeBoxes(boxes);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof ApiHttpError ? error.message : "No se pudieron cargar las cajas libres.";
+          setActionMessage({ type: "error", text: message });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingFreeBoxes(false);
+        }
+      }
+    };
+
+    void loadFreeBoxes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formBoxMode, mostrarFormCaja]);
+
   return (
     <div className="container py-4">
       {huecoSeleccionado && (
@@ -154,10 +334,22 @@ export default function StockUbicationPage() {
                   <p className="stock-slot-modal__eyebrow mb-1">Detalle de ubicación</p>
                   <h5 className="modal-title stock-slot-modal__title">{huecoSeleccionado.referencia}</h5>
                 </div>
-                <button className="btn-close" onClick={() => setHuecoSeleccionado(null)} />
+                <button
+                  className="btn-close"
+                  onClick={() => {
+                    setHuecoSeleccionado(null);
+                    setActionMessage(null);
+                    navigate("/stock");
+                  }}
+                />
               </div>
 
               <div className="modal-body stock-slot-modal__body">
+                {actionMessage && (
+                  <div className={`alert py-2 ${actionMessage.type === "success" ? "alert-success" : "alert-danger"}`}>
+                    {actionMessage.text}
+                  </div>
+                )}
                 <div className="stock-slot-modal__layout">
                   <section className="stock-slot-modal__left">
                     <div className="stock-slot-modal__metrics">
@@ -214,6 +406,25 @@ export default function StockUbicationPage() {
                               {huecoSeleccionado.pale.descripcion}
                             </p>
                           </div>
+                          <div className="stock-slot-pallet-card__field stock-slot-pallet-card__field--full">
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
+                              onClick={() => {
+                                if (huecoSeleccionado.ubicacionAlmacenId && huecoSeleccionado.pale?.id) {
+                                  setConfirmAction({
+                                    type: "pallet",
+                                    ubicacionId: huecoSeleccionado.ubicacionAlmacenId,
+                                    paletId: huecoSeleccionado.pale.id,
+                                  });
+                                }
+                              }}
+                              disabled={isUnassigningPallet}
+                            >
+                              <i className="bi bi-x-circle" aria-hidden="true" />
+                              {isUnassigningPallet ? "Desasignando..." : "Quitar palé"}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="stock-slot-pallet-card__empty">
@@ -246,14 +457,35 @@ export default function StockUbicationPage() {
                       {huecoSeleccionado.cajas.length > 0 ? (
                         <div className="stock-slot-box-list">
                           {huecoSeleccionado.cajas.map((caja) => (
-                            <button
-                              type="button"
-                              className="stock-slot-box-list__item stock-slot-box-list__item--button"
-                              key={caja.id}
-                              onClick={() => handleOpenBoxTerminals(caja)}
-                            >
-                              {caja.etiqueta}
-                            </button>
+                            <div className="stock-slot-box-list__item stock-slot-box-list__item--row" key={caja.id}>
+                              <button
+                                type="button"
+                                className="stock-slot-box-list__item stock-slot-box-list__item--button"
+                                onClick={() => handleOpenBoxTerminals(caja)}
+                              >
+                                <span>{caja.etiqueta}</span>
+                                <span
+                                  className={`stock-slot-box-list__capacity ${isCapacityOverflow(caja.id) ? "is-overflow" : ""}`}
+                                >
+                                  <i className="bi bi-upc-scan" aria-hidden="true" />
+                                  {getCapacityLabel(caja.id)}
+                                </span>
+                              </button>
+                              <span className="stock-slot-box-list__actions">
+                                <button
+                                  type="button"
+                                  className="btn btn-link text-danger p-0 d-inline-flex align-items-center gap-1"
+                                  onClick={() => {
+                                    if (huecoSeleccionado.pale?.id) {
+                                      setConfirmAction({ type: "box", paletId: huecoSeleccionado.pale.id, cajaId: caja.id });
+                                    }
+                                  }}
+                                  disabled={isUnassigningBoxId === caja.id}
+                                >
+                                  <i className="bi bi-x-circle" aria-hidden="true" />
+                                </button>
+                              </span>
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -277,14 +509,13 @@ export default function StockUbicationPage() {
 
       {mostrarFormCaja && huecoActivo && (
         <>
-          <div className="modal-backdrop fade show" />
           <div className="modal fade show d-block">
-            <div className="modal-dialog">
-              <div className="modal-content p-3">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className={`modal-content p-3 ${formBoxMode === "registered" ? "stock-box-modal-content--registered" : ""}`.trim()}>
               {!formBoxMode && (
                 <div className="box-mode-selector">
                   <div className="d-flex justify-content-between align-items-start mb-2">
-                    <h5 className="mb-0">Nueva caja</h5>
+                    <h5 className="mb-0 stock-modal-eyebrow-title">Nueva caja</h5>
                     <button type="button" className="btn-close" aria-label="Cerrar" onClick={cerrarFormCaja} />
                   </div>
                   <p className="text-muted mb-3">Elige cómo quieres agregar la caja al palé.</p>
@@ -311,13 +542,18 @@ export default function StockUbicationPage() {
 
               {formBoxMode && (
                 <>
-                  <h5 className="mb-3">{formBoxMode === "manual" ? "Dar de alta una caja" : "Caja registrada"}</h5>
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <h5 className="mb-0 stock-modal-eyebrow-title">{formBoxMode === "manual" ? "Dar de alta una caja" : "Caja registrada"}</h5>
+                    <button type="button" className="btn-close" aria-label="Cerrar" onClick={cerrarFormCaja} />
+                  </div>
                   <FormBox
                     hueco={huecoActivo}
                     mode={formBoxMode}
-                    onSubmit={handleCreateBox}
+                    freeBoxes={freeBoxes}
+                    isLoadingFreeBoxes={isLoadingFreeBoxes}
+                    onSubmitNew={handleCreateBox}
+                    onSubmitExisting={handleAssignExistingBox}
                     onCancel={cerrarFormCaja}
-                    onBack={() => setFormBoxMode(null)}
                   />
                 </>
               )}
@@ -329,11 +565,10 @@ export default function StockUbicationPage() {
 
       {mostrarFormPallet && huecoActivo && (
         <>
-          <div className="modal-backdrop fade show" />
           <div className="modal fade show d-block">
-            <div className="modal-dialog">
+            <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content p-3">
-              <h5 className="mb-3">Nueva caja</h5>
+              <h5 className="mb-3 stock-modal-eyebrow-title">Nueva caja</h5>
 
               <FormPallet
                 idHueco={huecoActivo.idHueco}
@@ -351,7 +586,7 @@ export default function StockUbicationPage() {
                     capacidadMaxCajas: data.capacidadMaxCajas,
                     codigoMarca,
                     ubicacionAlmacenId: huecoActivo.ubicacionAlmacenId,
-                    cajas: [],
+                    cajas: [] as [],
                   };
 
                   console.log("Create pallet request ids:", {
@@ -397,6 +632,34 @@ export default function StockUbicationPage() {
           )}
         </>
       )}
+
+      <SNSearchDeleteConfirmModal
+        isOpen={confirmAction !== null}
+        isLoading={isUnassigningPallet || isUnassigningBoxId !== null}
+        title="Confirmar desasignación"
+        message={
+          confirmAction?.type === "box"
+            ? `¿Seguro que quieres desasignar la caja ${confirmAction.cajaId} del palé ${confirmAction.paletId}?`
+            : confirmAction?.type === "pallet"
+              ? `¿Seguro que quieres desasignar el palé ${confirmAction.paletId} del habitáculo?`
+              : ""
+        }
+        confirmLabel="Desasignar"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onCancel={() => {
+          if (isUnassigningPallet || isUnassigningBoxId !== null) return;
+          setConfirmAction(null);
+        }}
+        onConfirm={() => {
+          if (!confirmAction) return;
+          if (confirmAction.type === "box") {
+            void handleUnassignBox(confirmAction.paletId, confirmAction.cajaId).finally(() => setConfirmAction(null));
+            return;
+          }
+          void handleUnassignPallet(confirmAction.ubicacionId, confirmAction.paletId).finally(() => setConfirmAction(null));
+        }}
+      />
     </div>
   );
 }

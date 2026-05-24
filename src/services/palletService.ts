@@ -19,3 +19,16 @@ export async function createPallet(payload: CreatePalletPayload): Promise<unknow
     body: JSON.stringify(payload),
   });
 }
+
+export type UnassignBoxFromPalletResponse = {
+  success: boolean;
+  mensaje: string;
+  paletId: number;
+  cajaId: number;
+};
+
+export async function unassignBoxFromPallet(paletId: number, cajaId: number): Promise<UnassignBoxFromPalletResponse> {
+  return apiRequest<UnassignBoxFromPalletResponse>(`/palets/${paletId}/cajas/${cajaId}`, {
+    method: "DELETE",
+  });
+}

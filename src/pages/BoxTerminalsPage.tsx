@@ -1,14 +1,19 @@
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import SNSearchDeleteConfirmModal from "../components/SNSearch/SNSearchDeleteConfirmModal";
 import { ApiHttpError } from "../services/apiClient";
 import {
   associateTerminalsToBox,
+  getCajaById,
+  unassignTerminalFromBox,
   validateTerminalForBox,
   type ValidarTerminalResponse,
 } from "../services/cajaTerminalService";
+import { getBoxCapacity } from "../services/boxService";
 import "../styles/BoxTerminalsPage.scss";
 
 type BoxTerminalsLocationState = {
+  huecoId?: number;
   ubicacion?: string;
   etiqueta?: string;
   marca?: string;
@@ -63,10 +68,82 @@ export default function BoxTerminalsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerSN, setScannerSN] = useState("");
+  const [deletingSn, setDeletingSn] = useState<string | null>(null);
+  const [confirmSn, setConfirmSn] = useState<string | null>(null);
+  const [boxInfo, setBoxInfo] = useState<{
+    etiqueta: string;
+    marca: string;
+    modelo: string;
+    capacidadTotal: number;
+  }>({
+    etiqueta: state?.etiqueta ?? "",
+    marca: state?.marca ?? "",
+    modelo: state?.modelo ?? "",
+    capacidadTotal: state?.capacidadTotal ?? 0,
+  });
+  const [capacityStatus, setCapacityStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  const capacidadMaxima = state?.capacidadTotal ?? 0;
+  const capacidadMaxima = boxInfo.capacidadTotal;
   const hasInvalidRows = useMemo(() => rows.some((row) => !row.isValid), [rows]);
   const canSubmit = rows.length > 0 && !hasInvalidRows && Number.isFinite(parsedBoxId);
+
+  const loadBoxData = async (cajaId: number) => {
+    const caja = await getCajaById(cajaId);
+
+    const apiRows: BoxTerminalRow[] = (caja.terminales ?? [])
+      .map((terminal) => ({
+        sn: terminal.numeroSerie?.trim().toUpperCase() ?? "",
+        isValid: true,
+        scannedAt: "Precargado",
+      }))
+      .filter((row) => row.sn.length > 0);
+
+    setRows(apiRows);
+    setBoxInfo({
+      etiqueta: caja.etiqueta ?? state?.etiqueta ?? "",
+      marca: caja.terminales?.[0]?.marca ?? state?.marca ?? "",
+      modelo: caja.modeloProducto ?? caja.terminales?.[0]?.modelo ?? state?.modelo ?? "",
+      capacidadTotal: caja.maxCapacity ?? state?.capacidadTotal ?? 0,
+    });
+
+    try {
+      const cap = await getBoxCapacity(cajaId);
+      setBoxInfo((prev) => ({ ...prev, capacidadTotal: cap.capacidadMaxima }));
+      setCapacityStatus("ready");
+    } catch {
+      setCapacityStatus("error");
+    }
+  };
+
+  useEffect(() => {
+    if (!Number.isFinite(parsedBoxId)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadBox = async () => {
+      try {
+        setCapacityStatus("loading");
+        await loadBoxData(parsedBoxId);
+        if (cancelled) return;
+      } catch (error) {
+        if (cancelled) return;
+        if (error instanceof ApiHttpError) {
+          setErrorMessage(`No se pudo cargar la caja: ${error.message}`);
+          return;
+        }
+        setErrorMessage("No se pudo cargar la información de la caja.");
+        setCapacityStatus("error");
+      }
+    };
+
+    void loadBox();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [parsedBoxId, state?.capacidadTotal, state?.etiqueta, state?.marca, state?.modelo]);
 
   const validateSN = async (sn: string): Promise<BoxTerminalRow> => {
     const response = await validateTerminalForBox(parsedBoxId, { sn });
@@ -127,8 +204,27 @@ export default function BoxTerminalsPage() {
     }
   };
 
-  const handleRemoveRow = (sn: string) => {
-    setRows((prev) => prev.filter((row) => row.sn !== sn));
+  const handleUnassignTerminal = async (sn: string) => {
+    const normalized = sn.trim().toUpperCase();
+    if (!normalized || !Number.isFinite(parsedBoxId)) return;
+
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      setDeletingSn(normalized);
+      const response = await unassignTerminalFromBox(parsedBoxId, normalized);
+      setSuccessMessage(response.mensaje || "Terminal desasignado con éxito.");
+      await loadBoxData(parsedBoxId);
+    } catch (error) {
+      if (error instanceof ApiHttpError) {
+        setErrorMessage(error.message || "No se pudo desasignar el terminal.");
+      } else {
+        setErrorMessage("No se pudo desasignar el terminal.");
+      }
+    } finally {
+      setDeletingSn(null);
+    }
   };
 
   const handleSubmit = async () => {
@@ -152,6 +248,21 @@ export default function BoxTerminalsPage() {
 
       if (response.success) {
         setSuccessMessage(`Terminales asociados correctamente a la caja ${response.cajaId}.`);
+        await loadBoxData(parsedBoxId);
+        if (typeof state?.huecoId === "number") {
+          navigate(`/stock/ubicacion/${state.huecoId}`, {
+            state: {
+              actionFeedback: `Terminales asociados correctamente a la caja ${response.cajaId}.`,
+            },
+          });
+        } else {
+          navigate("/stock", {
+            state: {
+              openBoxId: parsedBoxId,
+              actionFeedback: `Terminales asociados correctamente a la caja ${response.cajaId}.`,
+            },
+          });
+        }
         return;
       }
 
@@ -229,15 +340,15 @@ export default function BoxTerminalsPage() {
           <div className="row g-3">
             <div className="col-12 col-md-6 col-xl-2">
               <label className="form-label fw-semibold">Etiqueta</label>
-              <input className="form-control" value={state?.etiqueta ?? ""} readOnly />
+              <input className="form-control" value={boxInfo.etiqueta} readOnly />
             </div>
             <div className="col-12 col-md-6 col-xl-2">
               <label className="form-label fw-semibold">Marca</label>
-              <input className="form-control" value={state?.marca ?? ""} readOnly />
+              <input className="form-control" value={boxInfo.marca} readOnly />
             </div>
             <div className="col-12 col-md-6 col-xl-2">
               <label className="form-label fw-semibold">Modelo</label>
-              <input className="form-control" value={state?.modelo ?? ""} readOnly />
+              <input className="form-control" value={boxInfo.modelo} readOnly />
             </div>
             <div className="col-12 col-md-6 col-xl-2">
               <label className="form-label fw-semibold">Unidades</label>
@@ -251,6 +362,7 @@ export default function BoxTerminalsPage() {
                 </span>
                 <input className="form-control" value={capacidadMaxima} readOnly />
               </div>
+              {capacityStatus === "error" && <div className="form-text text-danger">Capacidad no disponible.</div>}
             </div>
           </div>
         </div>
@@ -308,8 +420,14 @@ export default function BoxTerminalsPage() {
                     </td>
                     <td>{row.scannedAt}</td>
                     <td className="text-end">
-                      <button type="button" className="btn btn-link text-danger p-0" onClick={() => handleRemoveRow(row.sn)}>
-                        Eliminar
+                      <button
+                        type="button"
+                        className="btn btn-link text-danger p-0 d-inline-flex align-items-center gap-1"
+                        onClick={() => setConfirmSn(row.sn)}
+                        disabled={deletingSn === row.sn}
+                      >
+                        <i className="bi bi-x-circle" aria-hidden="true" />
+                        {deletingSn === row.sn ? "Desasignando..." : "Desasignar terminal"}
                       </button>
                     </td>
                   </tr>
@@ -319,18 +437,13 @@ export default function BoxTerminalsPage() {
           </div>
         </div>
 
-        <div className="card-footer bg-transparent d-flex justify-content-between align-items-center">
-          <div className="text-muted">
-            Total escaneados: <strong>{rows.length}</strong> / {capacidadMaxima || "-"}
-          </div>
-          <div className="d-flex gap-2">
+        <div className="card-footer bg-transparent d-flex justify-content-end align-items-center gap-3">
             <button type="button" className="btn box-terminals-btn box-terminals-btn--secondary" onClick={() => navigate(-1)}>
               Cancelar
             </button>
             <button type="button" className="btn box-terminals-btn box-terminals-btn--primary" disabled={!canSubmit || isSubmitting} onClick={() => void handleSubmit()}>
               {isSubmitting ? "Enviando..." : "Enviar"}
             </button>
-          </div>
         </div>
       </div>
 
@@ -358,7 +471,7 @@ export default function BoxTerminalsPage() {
                       </div>
                       <div className="col-12 col-md-6">
                         <div className="small text-muted">Caja</div>
-                        <div className="fw-semibold">{state?.etiqueta || "-"} · {state?.marca || "-"} · {state?.modelo || "-"}</div>
+                        <div className="fw-semibold">{boxInfo.etiqueta || "-"} · {boxInfo.marca || "-"} · {boxInfo.modelo || "-"}</div>
                       </div>
                       <div className="col-12">
                         <div className="small text-muted">Total escaneados</div>
@@ -398,6 +511,24 @@ export default function BoxTerminalsPage() {
           </div>
         </>
       )}
+
+      <SNSearchDeleteConfirmModal
+        isOpen={confirmSn !== null}
+        isLoading={deletingSn !== null}
+        title="Confirmar desasignación"
+        message={`¿Seguro que quieres desasignar el terminal ${confirmSn ?? ""} de la caja ${parsedBoxId}?`}
+        confirmLabel="Desasignar"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onCancel={() => {
+          if (deletingSn !== null) return;
+          setConfirmSn(null);
+        }}
+        onConfirm={() => {
+          if (!confirmSn) return;
+          void handleUnassignTerminal(confirmSn).finally(() => setConfirmSn(null));
+        }}
+      />
     </div>
   );
 }
