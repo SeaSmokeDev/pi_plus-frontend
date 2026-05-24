@@ -2,7 +2,7 @@ import type { ExpeditionGroupList } from "../../types";
 
 type ExpeditionCardProps = {
   expedition: ExpeditionGroupList;
-  onEdit?: (expedition: ExpeditionGroupList) => void;
+  onQuickView: (expedition: ExpeditionGroupList) => void;
 };
 
 function formatStatusLabel(status: ExpeditionGroupList["estado"]): string {
@@ -36,8 +36,9 @@ function formatDateForView(value: string | null): string {
   return `${day}/${month}/${year}`;
 }
 
-export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardProps) {
-  const canEdit = expedition.estado === "abierta";
+export default function ExpeditionCard({ expedition, onQuickView }: ExpeditionCardProps) {
+  
+
 // console.log("ExpeditionCard render", { expedition, canEdit });
   return (
     <article className="card border-0 shadow-sm h-100">
@@ -49,15 +50,6 @@ export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardPro
           </div>
 
           <div className="d-flex align-items-start gap-2">
-            {canEdit && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => onEdit?.(expedition)}
-              >
-                Editar
-              </button>
-            )}
             <span
               className={[
                 "badge rounded-pill px-3 py-2 align-self-start",
@@ -97,6 +89,15 @@ export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardPro
           <div className="col-12 col-md-6 mt-4">
             <div className="text-muted small mb-1">Total expediciones: {expedition.totalExpediciones}</div>
           </div>
+        </div>
+       <div className="d-flex justify-content-end border-top pt-3">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => onQuickView(expedition)}
+          >
+            Vista rápida
+          </button>
         </div>
       </div>
     </article>

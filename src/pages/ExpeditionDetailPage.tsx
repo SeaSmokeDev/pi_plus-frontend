@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import type {
   BoxExpeditionDetail,
   ExpeditionDraftData,
@@ -16,9 +16,9 @@ const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
 export default function ExpeditionDetailPage() {
   const navigate = useNavigate();
-  const { reference } = useParams();
+  // const { reference } = useParams();
 
-  const isEditMode = Boolean(reference);
+  // const isEditMode = Boolean(reference);
 
   const [draft, setDraft] = useState<ExpeditionDraftData | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(true);
@@ -31,10 +31,10 @@ export default function ExpeditionDetailPage() {
   const { createBatch } = useExpeditionMutations();
 
   useEffect(() => {
-    if (isEditMode) {
-      setLoadingDraft(false);
-      return;
-    }
+    // if (isEditMode) {
+    //   setLoadingDraft(false);
+    //   return;
+    // }
 
     const savedDraft = sessionStorage.getItem(PENDING_EXPEDITION_STORAGE_KEY);
 
@@ -54,7 +54,7 @@ export default function ExpeditionDetailPage() {
     } finally {
       setLoadingDraft(false);
     }
-  }, [isEditMode, navigate]);
+  }, [navigate]);
 
   if (loadingDraft) {
     return <div className="container p-4">Cargando expedición...</div>;
@@ -130,29 +130,29 @@ export default function ExpeditionDetailPage() {
     return <div className="container p-4">Cargando expedición...</div>;
   }
 
-  if (isEditMode) {
-    return (
-      <div className="container-fluid p-4">
-        <section className="card border-0 shadow-sm">
-          <div className="card-body">
-            <h1 className="h4 fw-bold mb-2">Datos de la expedición</h1>
-            <p className="text-muted mb-3">
-              La edición por referencia se implementará cuando el backend
-              devuelva el lote completo.
-            </p>
+  // if (isEditMode) {
+  //   return (
+  //     <div className="container-fluid p-4">
+  //       <section className="card border-0 shadow-sm">
+  //         <div className="card-body">
+  //           <h1 className="h4 fw-bold mb-2">Datos de la expedición</h1>
+  //           <p className="text-muted mb-3">
+  //             La edición por referencia se implementará cuando el backend
+  //             devuelva el lote completo.
+  //           </p>
 
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => navigate("/expeditions")}
-            >
-              Volver al listado
-            </button>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  //           <button
+  //             type="button"
+  //             className="btn btn-outline-secondary"
+  //             onClick={() => navigate("/expeditions")}
+  //           >
+  //             Volver al listado
+  //           </button>
+  //         </div>
+  //       </section>
+  //     </div>
+  //   );
+  // }
 
   if (!draft) {
     return <div className="container p-4">No hay datos de expedición.</div>;
@@ -175,7 +175,7 @@ export default function ExpeditionDetailPage() {
     <div className="container-fluid p-4 d-flex flex-column gap-4">
       <div className="d-flex flex-column flex-xl-row gap-4 align-items-start">
         <div style={{ width: "100%", maxWidth: "420px" }}>
-          {!isEditMode && draft && (
+          {draft && (
             <ExpeditionDetailSidebar
               title="Crear expedición"
               submitLabel={saving || loadingUser ? "Guardando..." : "Guardar expedición"}

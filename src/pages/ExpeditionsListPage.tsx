@@ -4,6 +4,7 @@ import CreateExpeditionModal from "../components/expeditions/CreateExpeditionMod
 import ExpeditionFiltersPanel from "../components/expeditions/ExpeditionFiltersPanel";
 import ExpeditionSearchBar from "../components/expeditions/ExpeditionSearchBar";
 import ExpeditionsListComponent from "../components/expeditions/ExpeditionsListComponent";
+import ExpeditionQuickViewModal from "../components/expeditions/ExpeditionQuickViewModal";
 import { useExpeditions } from "../hooks/useExpeditions";
 import { useUsers } from "../hooks/useUsers";
 import type { ExpeditionGroupList, ExpeditionFilters } from "../types";
@@ -36,6 +37,8 @@ export default function ExpeditionsListPage() {
   const [filters, setFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [appliedLocalFilters, setAppliedLocalFilters] = useState<ExpeditionFilters>(emptyFilters);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
   const {
     expeditionsGrouped,
@@ -125,6 +128,16 @@ export default function ExpeditionsListPage() {
     await searchGroupWithFilters(payload);
   };
 
+  function handleOpenQuickView(expedition: ExpeditionGroupList) {
+    setSelectedReference(expedition.referenciaExpedicion);
+    setIsQuickViewOpen(true);
+  }
+
+  function handleCloseQuickView() {
+    setSelectedReference(null);
+    setIsQuickViewOpen(false);
+  }
+
   return (
     <div className="container-fluid p-4 d-flex flex-column gap-4">
       <section className="card border-0 shadow-sm bg-primary text-white">
@@ -189,7 +202,7 @@ export default function ExpeditionsListPage() {
 
         <ExpeditionsListComponent
           expeditionsList={filteredExpeditions}
-          onEdit={(expedition: ExpeditionGroupList) => navigate(`/expeditions/${expedition.referenciaExpedicion}/edit`)}
+          onQuickView={handleOpenQuickView}
         />
       </section>
 
@@ -201,6 +214,13 @@ export default function ExpeditionsListPage() {
           navigate("/expeditions/new");
         }}
       />
+
+      {isQuickViewOpen && selectedReference && (
+        <ExpeditionQuickViewModal
+          reference={selectedReference}
+          onClose={handleCloseQuickView}
+        />
+      )}
     </div>
   );
 }
