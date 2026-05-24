@@ -1,107 +1,106 @@
 import { useState } from "react";
-import {apiPalesMock} from "../../../mocks/apiDetallesPale";
-import type {ApiPale,MaterialPale,TipoPale} from "../../../mocks/apiDetallesPale"
+import type { PalletMaterial, PalletType } from "../../../services/palletService";
 
 interface NuevoPalePayload {
-  idPale: number;
-  material: MaterialPale;
-  tipo: TipoPale;
+  descripcion: string;
+  material: PalletMaterial;
+  tipo: PalletType;
   capacidadMaxCajas: number;
 }
 
 interface FormPalletProps {
   idHueco: number;
-  onSubmit: (data: NuevoPalePayload) => void;
+  onSubmit: (data: NuevoPalePayload) => Promise<void> | void;
   onCancel: () => void;
+  canSubmit?: boolean;
+  blockedMessage?: string;
 }
 
-export default function FormPallet({
-  idHueco,
-  onSubmit,
-  onCancel,
-}: FormPalletProps) {
-  const [paleSeleccionado, setPaleSeleccionado] =
-    useState<ApiPale | null>(null);
+const CAPACIDAD_FIJA = 8;
 
-  const handlePaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const paleId = Number(e.target.value);
-    const pale = apiPalesMock.find((p) => p.id === paleId) || null;
-    setPaleSeleccionado(pale);
-  };
+export default function FormPallet({ idHueco, onSubmit, onCancel, canSubmit = true, blockedMessage }: FormPalletProps) {
+  const [descripcion, setDescripcion] = useState("");
+  const [material, setMaterial] = useState<PalletMaterial | "">("");
+  const [tipo, setTipo] = useState<PalletType | "">("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!paleSeleccionado) return;
+    if (!material || !tipo) {
+      setErrorMessage("Selecciona material y tipo.");
+      return;
+    }
+    if (!canSubmit) {
+      setErrorMessage(blockedMessage || "La ubicación seleccionada no tiene ID real de almacén");
+      return;
+    }
 
-    onSubmit({
-      idPale: paleSeleccionado.id,
-      material: paleSeleccionado.material,
-      tipo: paleSeleccionado.tipo,
-      capacidadMaxCajas: paleSeleccionado.capacidadMaxCajas,
-    });
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+
+      await onSubmit({
+        descripcion: descripcion.trim(),
+        material,
+        tipo,
+        capacidadMaxCajas: CAPACIDAD_FIJA,
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo crear el palé.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h4 className="mb-3">Añadir palé al hueco</h4>
+    <form onSubmit={handleSubmit} className="stock-pallet-form">
+      <h4 className="mb-3 stock-pallet-form__title">Añadir palé al hueco</h4>
 
-      {/* Palé */}
-      <div key={`idUbicacionAlmacen-${idHueco}`} className="mb-3">
-        <label className="form-label">Palé</label>
-        <select
-          className="form-select"
-          onChange={handlePaleChange}
-          required
-        >
-          <option value="">Selecciona un palé</option>
-          {apiPalesMock.map((pale) => (
-            <option key={pale.id} value={pale.id}>
-              {pale.descripcion}
-            </option>
-          ))}
+      <div className="mb-3 stock-pallet-form__group" key={`idUbicacionAlmacen-${idHueco}`}>
+        <label className="form-label">Material</label>
+        <select className="form-select" value={material} onChange={(e) => setMaterial(e.target.value as PalletMaterial | "")} required>
+          <option value="">Selecciona un material</option>
+          <option value="madera">Madera</option>
+          <option value="plastico">Plástico</option>
         </select>
       </div>
 
-      {/* Material */}
-      <div className="mb-3">
-        <label className="form-label">Material</label>
-        <input
-          className="form-control"
-          value={paleSeleccionado?.material ?? ""}
-          disabled
-        />
-      </div>
-
-      {/* Tipo */}
-      <div className="mb-3">
+      <div className="mb-3 stock-pallet-form__group">
         <label className="form-label">Tipo</label>
-        <input
-          className="form-control"
-          value={paleSeleccionado?.tipo ?? ""}
-          disabled
-        />
+        <select className="form-select" value={tipo} onChange={(e) => setTipo(e.target.value as PalletType | "")} required>
+          <option value="">Selecciona un tipo</option>
+          <option value="europeo">Europeo</option>
+          <option value="americano">Americano</option>
+        </select>
       </div>
 
-      {/* Capacidad */}
-      <div className="mb-3">
+      <div className="mb-3 stock-pallet-form__group">
         <label className="form-label">Capacidad máxima de cajas</label>
+        <input className="form-control" value={CAPACIDAD_FIJA} readOnly />
+      </div>
+
+      <div className="mb-3 stock-pallet-form__group">
+        <label className="form-label">Descripción (opcional)</label>
         <input
           className="form-control"
-          value={paleSeleccionado?.capacidadMaxCajas ?? ""}
-          disabled
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          placeholder="Ej: Palet recepción Verifone"
         />
       </div>
 
-      <div className="d-flex gap-2">
-        <button type="submit" className="btn btn-primary">
-          Guardar
+      {errorMessage && <div className="alert alert-danger py-2">{errorMessage}</div>}
+      {!canSubmit && blockedMessage && <div className="alert alert-warning py-2">{blockedMessage}</div>}
+
+      <div className="d-flex gap-2 stock-pallet-form__actions">
+        <button type="submit" className="btn stock-pallet-form__btn stock-pallet-form__btn--save" disabled={isSubmitting || !canSubmit}>
+          <i className="bi bi-check2-circle" aria-hidden="true" />
+          {isSubmitting ? "Guardando..." : "Guardar"}
         </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={onCancel}
-        >
+        <button type="button" className="btn stock-pallet-form__btn stock-pallet-form__btn--cancel" onClick={onCancel} disabled={isSubmitting}>
+          <i className="bi bi-x-circle" aria-hidden="true" />
           Cancelar
         </button>
       </div>

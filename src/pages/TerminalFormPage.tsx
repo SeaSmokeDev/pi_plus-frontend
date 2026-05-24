@@ -1,28 +1,31 @@
+import { useLocation } from "react-router-dom";
 import TerminalFormHeader from "../components/terminal-form/TerminalFormHeader";
 import TerminalReadonlyInfo from "../components/terminal-form/TerminalReadonlyInfo";
 import TerminalEditableInfo from "../components/terminal-form/TerminalEditableForm";
-import TerminalDelete from "../components/terminal-form/TerminalDelete";
+
+type TerminalFormLocationState = {
+  mode?: "create" | "edit";
+  terminalId?: number;
+  terminalSN?: string;
+};
 
 function TerminalFormPage() {
+  const location = useLocation();
+  const locationState = location.state as TerminalFormLocationState | null;
+  const isCreateMode = locationState?.mode === "create";
 
   return (
-     <div className="container py-4">
+    <div className="container py-4">
       <div className="card shadow-sm">
-        {/* HEADER */}
-        <TerminalFormHeader />
+        <TerminalFormHeader isCreateMode={isCreateMode} />
         <div className="card-body">
-          {/* BLOQUE: NO EDITABLE */}
-          <TerminalReadonlyInfo />
+          <TerminalReadonlyInfo isCreateMode={isCreateMode} />
           <hr className="my-4" />
-          {/* BLOQUE: EDITABLE */}
-          <TerminalEditableInfo />
-          <hr className="my-4" />
-          {/* ELIMINAR */}
-          <TerminalDelete />
+          <TerminalEditableInfo isCreateMode={isCreateMode} />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default TerminalFormPage
+export default TerminalFormPage;

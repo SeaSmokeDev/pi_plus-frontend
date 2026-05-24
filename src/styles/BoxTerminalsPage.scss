@@ -1,0 +1,97 @@
+.box-terminals-card {
+  border: 1px solid #dbe4eb;
+  border-radius: 16px;
+  overflow: hidden;
+
+  .form-control {
+    border-color: #cfdae3;
+    border-radius: 10px;
+  }
+
+  .form-control:focus {
+    border-color: #0c677f;
+    box-shadow: 0 0 0 0.2rem rgba(12, 103, 127, 0.15);
+  }
+}
+
+.box-terminals-card__header,
+.box-terminals-card__meta {
+  background: #f8fbfd;
+}
+
+.box-terminals-btn {
+  align-items: center;
+  border-radius: 10px;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 0.4rem;
+}
+
+.btn.box-terminals-btn--primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #2563eb;
+  --bs-btn-border-color: #2563eb;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #1d4ed8;
+  --bs-btn-hover-border-color: #1d4ed8;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #1d4ed8;
+  --bs-btn-active-border-color: #1d4ed8;
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: #7ea6ff;
+  --bs-btn-disabled-border-color: #7ea6ff;
+}
+
+.btn.box-terminals-btn--secondary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #6b7280;
+  --bs-btn-border-color: #6b7280;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #4b5563;
+  --bs-btn-hover-border-color: #4b5563;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #4b5563;
+  --bs-btn-active-border-color: #4b5563;
+}
+
+.btn.box-terminals-btn--outline {
+  --bs-btn-color: #0c677f;
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: #0c677f;
+  --bs-btn-hover-color: #0a586c;
+  --bs-btn-hover-bg: #edf6fa;
+  --bs-btn-hover-border-color: #0a586c;
+  --bs-btn-active-color: #0a586c;
+  --bs-btn-active-bg: #edf6fa;
+  --bs-btn-active-border-color: #0a586c;
+}
+
+.box-terminals-capacity {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.box-terminals-capacity__icon {
+  align-items: center;
+  background: #e7f1f6;
+  border-radius: 8px;
+  color: #0c677f;
+  display: inline-flex;
+  font-size: 0.92rem;
+  height: 28px;
+  justify-content: center;
+  min-width: 28px;
+}
+
+.box-terminals-capacity .form-control {
+  flex: 1;
+  width: 100%;
+}
+
+.box-terminals-table th {
+  color: #0f172a;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
