@@ -93,6 +93,8 @@ export default function ExpeditionDetailPage() {
 
   async function handleSubmit() {
     if (!draft) return;
+    console.log("Submitting expedition with data:", draft, "and selected boxes:", selectedBoxes);
+
 
     if (selectedBoxes.length === 0) {
       setSubmitError("Debes añadir al menos una caja a la expedición.");
@@ -108,8 +110,8 @@ export default function ExpeditionDetailPage() {
 
     const request: CreateExpeditionBatchRequest = {
       direccionDestino: draft.direccionDestino,
-      paquetes: draft.paquetes ?? null,
-      peso: draft.peso ?? null,
+      paquetes: draft.paquetes ?? 0,
+      peso: draft.peso ?? 0,
       notas: draft.notas ?? null,
       fechaEnvio: draft.fechaEnvio ?? null,
       usuarioId: resolvedUser.id,
