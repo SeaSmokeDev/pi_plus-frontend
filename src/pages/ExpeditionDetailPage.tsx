@@ -1,28 +1,40 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import type { ExpeditionDraftData } from "../types";
-
-const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
+import { useNavigate} from "react-router-dom";
+import type {
+  BoxExpeditionDetail,
+  ExpeditionDraftData,
+  CreateExpeditionBatchRequest,
+} from "../types";
+import { useUserId } from "../hooks/useUserId";
+import { useExpeditionMutations } from "../hooks/useExpeditionMutations";
 
 import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 import ExpeditionBoxesPanel from "../components/expeditions/ExpeditionBoxesPanel";
-import ExpeditionSummaryPanel from "../components/expeditions/ExpeditionSummaryPanel";
+import ExpeditionPaymentsPanel from "../components/expeditions/ExpeditionPaymentsPanel";
+
+const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
 export default function ExpeditionDetailPage() {
   const navigate = useNavigate();
-  const { expeditionId } = useParams();
+  // const { reference } = useParams();
 
-  const isEditMode = Boolean(expeditionId);
+  // const isEditMode = Boolean(reference);
 
   const [draft, setDraft] = useState<ExpeditionDraftData | null>(null);
-  // const [form, setForm] = useState<ExpeditionDetailFormData | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(true);
+  const [selectedBoxes, setSelectedBoxes] = useState<BoxExpeditionDetail[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const { user, loading: loadingUser, loadUserId } = useUserId(draft?.username);
+
+  const { createBatch } = useExpeditionMutations();
 
   useEffect(() => {
-    if (isEditMode) {
-      setLoadingDraft(false);
-      return;
-    }
+    // if (isEditMode) {
+    //   setLoadingDraft(false);
+    //   return;
+    // }
 
     const savedDraft = sessionStorage.getItem(PENDING_EXPEDITION_STORAGE_KEY);
 
@@ -42,7 +54,7 @@ export default function ExpeditionDetailPage() {
     } finally {
       setLoadingDraft(false);
     }
-  }, [isEditMode, navigate]);
+  }, [navigate]);
 
   if (loadingDraft) {
     return <div className="container p-4">Cargando expedición...</div>;
@@ -72,67 +84,103 @@ export default function ExpeditionDetailPage() {
   }
 
   function handleCancel() {
-    if (!isEditMode) {
-      sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
-    }
-
+    sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
     navigate("/expeditions");
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!draft) return;
+    console.log("Submitting expedition with data:", draft, "and selected boxes:", selectedBoxes);
 
-    console.log("Guardar expedición/lote pendiente:", draft);
+
+    if (selectedBoxes.length === 0) {
+      setSubmitError("Debes añadir al menos una caja a la expedición.");
+      return;
+    }
+
+    const resolvedUser = user ?? await loadUserId(draft.username);
+
+    if (!resolvedUser) {
+      setSubmitError("No se ha podido obtener el usuario asignado.");
+      return;
+    }
+
+    const request: CreateExpeditionBatchRequest = {
+      direccionDestino: draft.direccionDestino,
+      paquetes: draft.paquetes ?? 0,
+      peso: draft.peso ?? 0,
+      notas: draft.notas ?? null,
+      fechaEnvio: draft.fechaEnvio ?? null,
+      usuarioId: resolvedUser.id,
+      cajaIds: selectedBoxes.map((box) => box.id),
+    };
+
+    const result = await createBatch(request);
+
+    if (!result) return;
+
+    sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
+    navigate("/expeditions");
   }
 
   if (loadingDraft) {
     return <div className="container p-4">Cargando expedición...</div>;
   }
 
-  if (isEditMode) {
-    return (
-      <div className="container-fluid p-4">
-        <section className="card border-0 shadow-sm">
-          <div className="card-body">
-            <h1 className="h4 fw-bold mb-2">Datos de la expedición</h1>
-            <p className="text-muted mb-3">
-              La edición por referencia se implementará cuando el backend devuelva el lote completo.
-            </p>
+  // if (isEditMode) {
+  //   return (
+  //     <div className="container-fluid p-4">
+  //       <section className="card border-0 shadow-sm">
+  //         <div className="card-body">
+  //           <h1 className="h4 fw-bold mb-2">Datos de la expedición</h1>
+  //           <p className="text-muted mb-3">
+  //             La edición por referencia se implementará cuando el backend
+  //             devuelva el lote completo.
+  //           </p>
 
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => navigate("/expeditions")}
-            >
-              Volver al listado
-            </button>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  //           <button
+  //             type="button"
+  //             className="btn btn-outline-secondary"
+  //             onClick={() => navigate("/expeditions")}
+  //           >
+  //             Volver al listado
+  //           </button>
+  //         </div>
+  //       </section>
+  //     </div>
+  //   );
+  // }
 
   if (!draft) {
-    return (
-      <div className="container p-4">
-        No hay datos de expedición.
-      </div>
+    return <div className="container p-4">No hay datos de expedición.</div>;
+  }
+
+  function handleAddBox(box: BoxExpeditionDetail) {
+    const alreadyExists = selectedBoxes.some(
+      (selectedBox) => selectedBox.id === box.id,
     );
+    if (alreadyExists) return;
+
+    setSelectedBoxes((prev) => [...prev, box]);
+  }
+
+  function handleRemoveBox(boxId: number) {
+    setSelectedBoxes((prev) => prev.filter((box) => box.id !== boxId));
   }
 
   return (
     <div className="container-fluid p-4 d-flex flex-column gap-4">
       <div className="d-flex flex-column flex-xl-row gap-4 align-items-start">
         <div style={{ width: "100%", maxWidth: "420px" }}>
-          {!isEditMode && draft && (
+          {draft && (
             <ExpeditionDetailSidebar
-            title="Crear expedición"
-            submitLabel="Guardar expedición"
-            form={draft}
-            onChange={handleDraftChange}
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-          />
+              title="Crear expedición"
+              submitLabel={saving || loadingUser ? "Guardando..." : "Guardar expedición"}
+              form={draft}
+              onChange={handleDraftChange}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+            />
           )}
         </div>
 
@@ -140,8 +188,12 @@ export default function ExpeditionDetailPage() {
           className="flex-grow-1 d-flex flex-column gap-4"
           style={{ minWidth: 0 }}
         >
-          <ExpeditionBoxesPanel />
-          <ExpeditionSummaryPanel />
+          <ExpeditionBoxesPanel
+            boxes={selectedBoxes}
+            onAddBox={handleAddBox}
+            onRemoveBox={handleRemoveBox}
+          />
+          <ExpeditionPaymentsPanel boxes={selectedBoxes} />
         </div>
       </div>
     </div>

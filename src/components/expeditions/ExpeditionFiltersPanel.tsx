@@ -40,6 +40,22 @@ export default function ExpeditionFiltersPanel({
           <h2 className="h6 mb-0 fw-bold">Filtros avanzados</h2>
         </div>
 
+        <div className="row g-3 mb-3">
+          <div className="col-12 col-md-6 col-xl-3">
+            <label htmlFor="filter-referenciaExpedicion" className="form-label">
+              Referencia expedición
+            </label>
+            <input
+              id="filter-referenciaExpedicion"
+              type="text"
+              className="form-control"
+              placeholder="Ej: EXP-20260505-001"
+              value={filters.referenciaExpedicion}
+              onChange={(event) => onFilterChange("referenciaExpedicion", event.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="row g-3">
           <div className="col-12 col-md-6 col-xl-3">
             <label htmlFor="filter-created-from" className="form-label">

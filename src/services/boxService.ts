@@ -1,5 +1,11 @@
+
 import { apiUrl } from "../auth/session";
 import { ApiHttpError, apiRequest } from "./apiClient";
+import type { BoxExpeditionDetail } from "../types";
+
+export function getBoxExpeditionDetail(etiqueta: string) {
+  return apiRequest<BoxExpeditionDetail>(`/cajas/expedicion-detail/${etiqueta}`);
+}
 
 export type CreateBoxPayload = {
   etiqueta: string;
@@ -161,3 +167,4 @@ export async function assignBoxToPallet(cajaId: number, paletId: number): Promis
     throw error;
   }
 }
+

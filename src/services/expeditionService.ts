@@ -1,9 +1,10 @@
 import type {
   Expedition,
-  // CreateExpeditionRequest,
-  UpdateExpeditionRequest,
+  CreateExpeditionBatchRequest,
   ExpeditionFilters,
   ExpeditionList,
+  ExpeditionGroupList,
+  ExpeditionQuickView,
 } from "../types";
 import { apiRequest } from "./apiClient";
 
@@ -19,18 +20,49 @@ export function getExpedition(id: number) {
   return apiRequest<Expedition>(`/expediciones/${id}`);
 }
 
-export function getExpeditionsByUser(userName: string) {
-  return apiRequest<Expedition[]>(`/expediciones/nombre/usuario/${userName}`);
-}
-
-export function getExpeditionsByAddress(address: string) {
-  return apiRequest<Expedition[]>(
-    `/expediciones/direccion?contiene=${encodeURIComponent(address)}`
-  );
-}
-
 export function getExpeditionsListToday() {
   return apiRequest<ExpeditionList[]>("/expediciones/today/list");
+}
+
+export function getExpeditionsGroupedByReference() {
+  return apiRequest<ExpeditionGroupList[]>("/expediciones/grouped/today");
+}
+
+export function getExpeditionsGroupedByReferenceWithFilters(filters: ExpeditionFilters) {
+  const params = new URLSearchParams();
+
+  if (filters.referenciaExpedicion.trim()) {
+    params.set("referenciaExpedicion", filters.referenciaExpedicion.trim());
+  }
+  if (filters.fechaCreacionDesde) {
+    params.set("fechaCreacionDesde", filters.fechaCreacionDesde);
+  }
+  if (filters.fechaCreacionHasta) {
+    params.set("fechaCreacionHasta", filters.fechaCreacionHasta);
+  }
+  if (filters.fechaRecepcionDesde) {
+    params.set("fechaRecepcionDesde", filters.fechaRecepcionDesde);
+  }
+  if (filters.fechaRecepcionHasta) {
+    params.set("fechaRecepcionHasta", filters.fechaRecepcionHasta);
+  }
+  if(filters.fechaEnvio) {
+    params.set("fechaEnvio", filters.fechaEnvio);
+  }
+  if (filters.usuarioId !== null) {
+    params.set("usuarioId", String(filters.usuarioId));
+  }
+  if (filters.direccionDestino.trim()) {
+    params.set("destino", filters.direccionDestino.trim());
+  }
+  if (filters.estado) {
+    params.set("estado", filters.estado);
+  }
+
+  const query = params.toString();
+  return apiRequest<ExpeditionGroupList[]>(
+    query ? `/expediciones/grouped/search?${query}` : "/expediciones/grouped/search"
+  );
 }
 
 export function searchExpeditionsList(filters: ExpeditionFilters) {
@@ -65,19 +97,19 @@ export function searchExpeditionsList(filters: ExpeditionFilters) {
   );
 }
 
-// export function createExpedition(expedition: CreateExpeditionRequest) {
-//   return apiRequest<Expedition>("/expediciones", {
-//     method: "POST",
-//     body: JSON.stringify(expedition),
-//   });
-// }
+export function getExpeditionQuickView(reference: string) {
+  return apiRequest<ExpeditionQuickView>(
+    `/expediciones/referencia/${reference}/resumen`
+  );
+}
 
-export function updateExpedition(id: number, expedition: UpdateExpeditionRequest) {
-  return apiRequest<Expedition>(`/expediciones/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(expedition),
+export function createExpeditionBatch(data: CreateExpeditionBatchRequest) {
+  return apiRequest<ExpeditionGroupList>("/expediciones/lote", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }
+
 
 export function deleteExpedition(id: number) {
   return apiRequest<void>(`/expediciones/${id}`, {

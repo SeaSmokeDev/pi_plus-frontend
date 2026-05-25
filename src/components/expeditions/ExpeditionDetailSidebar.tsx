@@ -1,4 +1,3 @@
-// import { useUserId } from "../../hooks/useUserId";
 import type { ExpeditionDraftData } from "../../types";
 
 type ExpeditionDetailSidebarProps = {
@@ -18,12 +17,6 @@ export default function ExpeditionDetailSidebar({
   onSubmit,
   onCancel,
 }: ExpeditionDetailSidebarProps) {
-  // const {
-  //   user,
-  //   loading: loadingUser,
-  //   error: userError,
-  //   loadUserId,
-  // } = useUserId(form?.username);
 
   return (
     <section className="card border-0 shadow-sm">

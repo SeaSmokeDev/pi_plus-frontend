@@ -47,8 +47,6 @@ export default function CreateExpeditionModal({
     getAuthUserFromCookie(),
   );
 
-  
-
   useEffect(() => {
     if (authUser) {
       return;
@@ -112,8 +110,6 @@ export default function CreateExpeditionModal({
       PENDING_EXPEDITION_STORAGE_KEY,
       JSON.stringify(pendingExpedition),
     );
-
-
 
     setShowConfirmation(false);
     onContinue();

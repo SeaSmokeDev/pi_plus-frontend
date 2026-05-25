@@ -1,15 +1,15 @@
-import type { ExpeditionList } from "../../types";
+import type { ExpeditionGroupList } from "../../types";
 
 type ExpeditionCardProps = {
-  expedition: ExpeditionList;
-  onEdit?: (expedition: ExpeditionList) => void;
+  expedition: ExpeditionGroupList;
+  onQuickView: (expedition: ExpeditionGroupList) => void;
 };
 
-function formatStatusLabel(status: ExpeditionList["estado"]): string {
+function formatStatusLabel(status: ExpeditionGroupList["estado"]): string {
   return status === "en_transito" ? "En transito" : status === "abierta" ? "Abierta" : "Recibida";
 }
 
-function getStatusClassName(status: ExpeditionList["estado"]): string {
+function getStatusClassName(status: ExpeditionGroupList["estado"]): string {
   if (status === "abierta") {
     return "text-bg-warning";
   }
@@ -36,9 +36,10 @@ function formatDateForView(value: string | null): string {
   return `${day}/${month}/${year}`;
 }
 
-export default function ExpeditionCard({ expedition, onEdit }: ExpeditionCardProps) {
-  const canEdit = expedition.estado === "abierta";
-console.log("ExpeditionCard render", { expedition, canEdit });
+export default function ExpeditionCard({ expedition, onQuickView }: ExpeditionCardProps) {
+  
+
+// console.log("ExpeditionCard render", { expedition, canEdit });
   return (
     <article className="card border-0 shadow-sm h-100">
       <div className="card-body p-3 d-flex flex-column gap-3">
@@ -49,15 +50,6 @@ console.log("ExpeditionCard render", { expedition, canEdit });
           </div>
 
           <div className="d-flex align-items-start gap-2">
-            {canEdit && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => onEdit?.(expedition)}
-              >
-                Editar
-              </button>
-            )}
             <span
               className={[
                 "badge rounded-pill px-3 py-2 align-self-start",
@@ -94,6 +86,18 @@ console.log("ExpeditionCard render", { expedition, canEdit });
             <div className="text-muted small mb-1">Fecha envio</div>
             <div>{formatDateForView(expedition.fechaEnvio)}</div>
           </div>
+          <div className="col-12 col-md-6 mt-4">
+            <div className="text-muted small mb-1">Total expediciones: {expedition.totalExpediciones}</div>
+          </div>
+        </div>
+       <div className="d-flex justify-content-end border-top pt-3">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => onQuickView(expedition)}
+          >
+            Vista rápida
+          </button>
         </div>
       </div>
     </article>
