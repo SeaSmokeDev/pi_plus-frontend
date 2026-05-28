@@ -74,13 +74,12 @@ export interface ExpeditionDetailFormData {
   estado?: ExpeditionStatus;
 }
 
-export interface CreateExpeditionBatchRequest {
+export interface ExpeditionBatchRequest {
   direccionDestino: string;
   paquetes?: number | null;
   peso?: number | null;
   notas?: string | null;
   usuarioId: ID;
-  fechaEnvio?: ApiDate | null;
   cajaIds: ID[];
 }
 

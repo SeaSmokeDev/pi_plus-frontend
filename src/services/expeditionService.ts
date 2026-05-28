@@ -1,6 +1,6 @@
 import type {
   Expedition,
-  CreateExpeditionBatchRequest,
+  ExpeditionBatchRequest,
   ExpeditionFilters,
   ExpeditionList,
   ExpeditionGroupList,
@@ -103,9 +103,30 @@ export function getExpeditionQuickView(reference: string) {
   );
 }
 
-export function createExpeditionBatch(data: CreateExpeditionBatchRequest) {
-  return apiRequest<ExpeditionGroupList>("/expediciones/lote", {
+export function createExpeditionBatch(data: ExpeditionBatchRequest) {
+  return apiRequest<ExpeditionGroupList>("/expediciones/lote/confirmar", {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function saveExpeditionBatch(data: ExpeditionBatchRequest) {
+  return apiRequest<ExpeditionGroupList>("/expediciones/lote/guardar", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function confirmExpeditionBatch(reference: string, data: ExpeditionBatchRequest) {
+  return apiRequest<ExpeditionGroupList>(`/expediciones/referencia/${reference}/confirmar`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function saveExpeditionOpenBatch(reference: string, data: ExpeditionBatchRequest) {
+  return apiRequest<ExpeditionGroupList>(`/expediciones/referencia/${reference}/guardar`, {
+    method: "PUT",
     body: JSON.stringify(data),
   });
 }
