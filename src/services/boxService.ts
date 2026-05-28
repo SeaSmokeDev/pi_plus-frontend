@@ -63,14 +63,15 @@ function sanitizeBackendError(message?: string): string {
 }
 
 export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> {
+  const modeloCompleto = `${payload.marca.trim()} ${payload.modelo.trim()}`.trim();
   const requestBody = {
     etiqueta: payload.etiqueta,
-    modeloProducto: payload.modelo,
+    modeloProducto: modeloCompleto,
     maxCapacity: payload.capacidadTotal,
     paletId: typeof payload.paletId === "number" ? payload.paletId : null,
   };
 
-  console.log("[createBox] request payload:", requestBody);
+  console.log("[createBox] payload enviado a POST /api/cajas:", requestBody);
 
   const response = await fetch(apiUrl("/cajas"), {
     method: "POST",
@@ -104,7 +105,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
     return {
       id: data.id,
       etiqueta: payload.etiqueta,
-      modeloProducto: payload.modelo,
+      modeloProducto: modeloCompleto,
       paletId: payload.paletId ?? null,
     };
   }
@@ -113,7 +114,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
     return {
       id: data.cajaId,
       etiqueta: payload.etiqueta,
-      modeloProducto: payload.modelo,
+      modeloProducto: modeloCompleto,
       paletId: payload.paletId ?? null,
     };
   }
@@ -122,7 +123,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
     return {
       id: data?.data?.id ?? (data?.data?.cajaId as number),
       etiqueta: payload.etiqueta,
-      modeloProducto: payload.modelo,
+      modeloProducto: modeloCompleto,
       paletId: payload.paletId ?? null,
     };
   }
@@ -134,7 +135,7 @@ export async function createBox(payload: CreateBoxPayload): Promise<CreatedBox> 
       return {
         id: Number(match[1]),
         etiqueta: payload.etiqueta,
-        modeloProducto: payload.modelo,
+        modeloProducto: modeloCompleto,
         paletId: payload.paletId ?? null,
       };
     }
@@ -149,6 +150,10 @@ export async function getBoxCapacity(cajaId: number): Promise<BoxCapacityRespons
 
 export async function getFreeBoxes(): Promise<FreeBox[]> {
   return apiRequest<FreeBox[]>("/cajas/free");
+}
+
+export async function getFreeBoxesByBrand(marca: string): Promise<FreeBox[]> {
+  return apiRequest<FreeBox[]>(`/cajas/free/marca/${encodeURIComponent(marca)}`);
 }
 
 export async function assignBoxToPallet(cajaId: number, paletId: number): Promise<{ success?: boolean; mensaje?: string }> {
@@ -167,4 +172,3 @@ export async function assignBoxToPallet(cajaId: number, paletId: number): Promis
     throw error;
   }
 }
-

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import SNSearchDeleteConfirmModal from "../components/SNSearch/SNSearchDeleteConfirmModal";
 import Aisle from "../components/stockUbication/Aisle";
@@ -6,12 +6,32 @@ import AddPalletButton from "../components/stockUbication/AddPalletButton";
 import AddBoxButton from "../components/stockUbication/AddBoxButton";
 import FormBox, { type FormBoxMode, type NuevaCajaPayload } from "../components/stockUbication/forms/FormBox";
 import FormPallet from "../components/stockUbication/forms/FormPallet";
-import { assignBoxToPallet, createBox, getBoxCapacity, getFreeBoxes, type BoxCapacityResponse, type FreeBox } from "../services/boxService";
-import { createPallet, unassignBoxFromPallet } from "../services/palletService";
-import { getWarehouseMap, unassignPalletFromUbicacion } from "../services/warehouseMapService";
+import { assignBoxToPallet, createBox, getBoxCapacity, type BoxCapacityResponse, type FreeBox } from "../services/boxService";
+import {
+  createPallet,
+  deletePallet,
+  getFreePallets,
+  getPalletById,
+  movePalletToUbicacion,
+  unassignBoxFromPallet,
+  type FreePalletResponse,
+  type PalletDetailResponse,
+} from "../services/palletService";
+import { getWarehouseMap } from "../services/warehouseMapService";
 import { ApiHttpError } from "../services/apiClient";
 import type { WarehouseMapItem } from "../types/warehouseMap.types";
+import { getCajaById } from "../services/cajaTerminalService";
 import "../styles/StockUbicationPage.scss";
+
+const resolvePalletBrand = (value?: string | null): string | null => {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  if (raw.includes("-")) {
+    const parts = raw.split("-").map((p) => p.trim()).filter(Boolean);
+    if (parts.length >= 2) return parts[1];
+  }
+  return raw;
+};
 
 export default function StockUbicationPage() {
   const location = useLocation();
@@ -24,23 +44,29 @@ export default function StockUbicationPage() {
   const [mostrarFormCaja, setMostrarFormCaja] = useState(false);
   const [huecoActivo, setHuecoActivo] = useState<WarehouseMapItem | null>(null);
   const [mostrarFormPallet, setMostrarFormPallet] = useState(false);
+  const [palletActionMode, setPalletActionMode] = useState<"new" | "existing" | null>(null);
   const [formBoxMode, setFormBoxMode] = useState<FormBoxMode | null>(null);
-  const [freeBoxes, setFreeBoxes] = useState<FreeBox[]>([]);
-  const [isLoadingFreeBoxes, setIsLoadingFreeBoxes] = useState(false);
   const [boxCapacities, setBoxCapacities] = useState<Record<number, BoxCapacityResponse | "loading" | "error">>({});
+  const [boxModelsById, setBoxModelsById] = useState<Record<number, string>>({});
   const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isUnassigningBoxId, setIsUnassigningBoxId] = useState<number | null>(null);
   const [isUnassigningPallet, setIsUnassigningPallet] = useState(false);
+  const [selectedPalletDetail, setSelectedPalletDetail] = useState<PalletDetailResponse | null>(null);
+  const [selectedPalletBrand, setSelectedPalletBrand] = useState<string | null>(null);
+  const [freePallets, setFreePallets] = useState<FreePalletResponse[]>([]);
+  const [selectedFreePalletId, setSelectedFreePalletId] = useState<number | null>(null);
+  const [isLoadingFreePallets, setIsLoadingFreePallets] = useState(false);
+  const [isMovingPallet, setIsMovingPallet] = useState(false);
   const [confirmAction, setConfirmAction] = useState<
     | { type: "box"; paletId: number; cajaId: number }
-    | { type: "pallet"; ubicacionId: number; paletId: number }
+    | { type: "unassignPallet"; paletId: number }
+    | { type: "deletePallet"; paletId: number }
     | null
   >(null);
 
   const abrirFormCaja = (hueco: WarehouseMapItem) => {
     setHuecoActivo(hueco);
     setFormBoxMode(null);
-    setFreeBoxes([]);
     setMostrarFormCaja(true);
   };
 
@@ -51,12 +77,25 @@ export default function StockUbicationPage() {
 
   const abrirFormPallet = (hueco: WarehouseMapItem) => {
     setHuecoActivo(hueco);
+    setPalletActionMode(null);
+    setSelectedFreePalletId(null);
+    setFreePallets([]);
     setMostrarFormPallet(true);
   };
 
   const cerrarFormPallet = () => {
     setMostrarFormPallet(false);
+    setPalletActionMode(null);
+    setSelectedFreePalletId(null);
   };
+
+  const movePaletIdFromQuery = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    const value = query.get("movePaletId");
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [location.search]);
 
   const loadMap = async (options?: { keepError?: boolean }): Promise<WarehouseMapItem[]> => {
     try {
@@ -86,6 +125,7 @@ export default function StockUbicationPage() {
   }, []);
 
   const pasillosMap = new Map<number, WarehouseMapItem[]>();
+  const hasBoxesInSelectedPallet = (selectedPalletDetail?.cajas?.length ?? huecoSeleccionado?.cajas.length ?? 0) > 0;
 
   const getCapacityLabel = (cajaId: number) => {
     const capacity = boxCapacities[cajaId];
@@ -110,6 +150,34 @@ export default function StockUbicationPage() {
   });
 
   const handleHuecoClick = (ubicacion: WarehouseMapItem) => {
+    if (movePaletIdFromQuery !== null) {
+      const ubicacionAlmacenId = ubicacion.ubicacionAlmacenId;
+      if (ubicacionAlmacenId === null || typeof ubicacionAlmacenId === "undefined") {
+        setActionMessage({ type: "error", text: "El hueco seleccionado no tiene ubicacionAlmacenId válido." });
+        return;
+      }
+
+      void (async () => {
+        setActionMessage(null);
+        setIsMovingPallet(true);
+        try {
+          await movePalletToUbicacion(movePaletIdFromQuery, { ubicacionAlmacenId });
+          await loadMap({ keepError: true });
+          navigate("/stock", { replace: true });
+          setActionMessage({
+            type: "success",
+            text: `Palé ${movePaletIdFromQuery} movido correctamente a ${ubicacion.referencia}.`,
+          });
+        } catch (error) {
+          const message = error instanceof ApiHttpError ? error.message : "No se pudo mover el palé.";
+          setActionMessage({ type: "error", text: message });
+        } finally {
+          setIsMovingPallet(false);
+        }
+      })();
+      return;
+    }
+
     console.log("Habitáculo seleccionado:", {
       idHueco: ubicacion.idHueco,
       pasillo: ubicacion.pasillo.numero,
@@ -119,37 +187,58 @@ export default function StockUbicationPage() {
     navigate(`/stock/ubicacion/${ubicacion.idHueco}`);
   };
 
-  const handleCreateBox = async (payload: NuevaCajaPayload) => {
-    const created = await createBox(payload);
-    setMostrarFormCaja(false);
-    setFormBoxMode(null);
-    await loadMap({ keepError: true });
-
-    navigate(`/stock/boxes/${created.id}/terminals`, {
-      state: {
-        huecoId: huecoActivo?.idHueco,
-        ubicacion: `${huecoActivo?.referencia ?? ""} · Pasillo ${huecoActivo?.pasillo.numero ?? "-"} · Estantería ${huecoActivo?.estanteria.descripcion ?? "-"}${typeof huecoActivo?.estanteria.nivel === "number" ? `/${huecoActivo.estanteria.nivel}` : ""}`,
-        etiqueta: payload.etiqueta,
-        marca: payload.marca,
-        modelo: payload.modelo,
-        capacidadTotal: payload.capacidadTotal,
-        unidades: payload.unidades,
-      },
-    });
+  const handleStartMovePallet = (paletId: number) => {
+    setHuecoSeleccionado(null);
+    setActionMessage(null);
+    navigate(`/stock?movePaletId=${paletId}`);
   };
 
-  const handleAssignExistingBox = async (boxId: number) => {
-    const paletId = huecoActivo?.pale?.id ?? null;
-    if (!paletId) {
-      throw new Error("No hay palé seleccionado para asignar la caja.");
+  const handleAssignExistingPallet = async () => {
+    if (!huecoActivo?.ubicacionAlmacenId || !selectedFreePalletId) {
+      throw new Error("Selecciona un palé y una ubicación válida.");
     }
+    await movePalletToUbicacion(selectedFreePalletId, { ubicacionAlmacenId: huecoActivo.ubicacionAlmacenId });
+    const items = await loadMap({ keepError: true });
+    refreshSelectedHueco(items);
+    setMostrarFormPallet(false);
+    setPalletActionMode(null);
+    setSelectedFreePalletId(null);
+    setActionMessage({ type: "success", text: "Palé asignado correctamente al hueco." });
+  };
 
-    await assignBoxToPallet(boxId, paletId);
+  const handleCreateBox = async (payload: NuevaCajaPayload) => {
+    await createBox(payload);
     setMostrarFormCaja(false);
     setFormBoxMode(null);
     const items = await loadMap({ keepError: true });
     refreshSelectedHueco(items);
-    setActionMessage({ type: "success", text: "Caja asignada correctamente al palé." });
+    setActionMessage({
+      type: "success",
+      text: `Caja ${payload.etiqueta} creada correctamente. Ahora asígnala al palé desde "Asignar una caja al palé".`,
+    });
+  };
+
+  const handleAssignExistingBox = async (box: FreeBox) => {
+    const paletId = huecoActivo?.pale?.id ?? null;
+    if (!paletId) {
+      throw new Error("No hay palé seleccionado para asignar la caja.");
+    }
+    await assignBoxToPallet(box.id, paletId);
+    setMostrarFormCaja(false);
+    setFormBoxMode(null);
+    await loadMap({ keepError: true });
+
+    navigate(`/stock/boxes/${box.id}/terminals`, {
+      state: {
+        huecoId: huecoActivo?.idHueco,
+        ubicacion: `${huecoActivo?.referencia ?? ""} · Pasillo ${huecoActivo?.pasillo.numero ?? "-"} · Estantería ${huecoActivo?.estanteria.descripcion ?? "-"}${typeof huecoActivo?.estanteria.nivel === "number" ? `/${huecoActivo.estanteria.nivel}` : ""}`,
+        etiqueta: box.etiqueta,
+        marca: box.modeloProducto?.split(" ")[0] ?? "",
+        modelo: box.modeloProducto?.split(" ").slice(1).join(" ") ?? "",
+        capacidadTotal: box.maxCapacity ?? 0,
+        unidades: 0,
+      },
+    });
   };
 
   const handleOpenBoxTerminals = (caja: WarehouseMapItem["cajas"][number]) => {
@@ -185,10 +274,13 @@ export default function StockUbicationPage() {
     }
   };
 
-  const refreshMapAndSelectedHueco = async () => {
+  const refreshMapAndSelectedHueco = async (): Promise<WarehouseMapItem | null> => {
     const items = await getWarehouseMap();
     setDetalles(items);
+    const selectedId = huecoSeleccionado?.idHueco ?? huecoActivo?.idHueco ?? null;
+    const updated = selectedId ? items.find((item) => item.idHueco === selectedId) ?? null : null;
     refreshSelectedHueco(items);
+    return updated;
   };
 
   const handleUnassignBox = async (paletId: number, cajaId: number) => {
@@ -206,16 +298,30 @@ export default function StockUbicationPage() {
     }
   };
 
-  const handleUnassignPallet = async (ubicacionId: number, paletId: number) => {
-
+  const handleUnassignPallet = async (paletId: number) => {
     setActionMessage(null);
     setIsUnassigningPallet(true);
     try {
-      const response = await unassignPalletFromUbicacion(ubicacionId, paletId);
-      setActionMessage({ type: "success", text: response.mensaje || "Palé desasignado del habitáculo con éxito." });
+      const response = await movePalletToUbicacion(paletId, { ubicacionAlmacenId: null });
+      setActionMessage({ type: "success", text: response.mensaje || "Palé desasignado de la ubicación con éxito." });
       await refreshMapAndSelectedHueco();
     } catch (error) {
-      const message = error instanceof ApiHttpError ? error.message : "No se pudo desasignar el palé.";
+      const message = error instanceof ApiHttpError ? error.message : "No se pudo desasignar el palé de la ubicación.";
+      setActionMessage({ type: "error", text: message });
+    } finally {
+      setIsUnassigningPallet(false);
+    }
+  };
+
+  const handleDeletePallet = async (paletId: number) => {
+    setActionMessage(null);
+    setIsUnassigningPallet(true);
+    try {
+      const response = await deletePallet(paletId);
+      setActionMessage({ type: "success", text: response.mensaje || "Palé eliminado con éxito." });
+      await refreshMapAndSelectedHueco();
+    } catch (error) {
+      const message = error instanceof ApiHttpError ? error.message : "No se pudo eliminar el palé.";
       setActionMessage({ type: "error", text: message });
     } finally {
       setIsUnassigningPallet(false);
@@ -266,6 +372,51 @@ export default function StockUbicationPage() {
   }, [huecoSeleccionado]);
 
   useEffect(() => {
+    const cajas = huecoSeleccionado?.cajas ?? [];
+    if (cajas.length === 0) return;
+
+    const missing = cajas
+      .filter((caja) => {
+        const modelFromMap = (caja.modeloProducto ?? "").trim();
+        const modelFromTerminal = caja.terminales?.[0]?.modelo?.trim() ?? "";
+        return !modelFromMap && !modelFromTerminal && !boxModelsById[caja.id];
+      })
+      .map((caja) => caja.id);
+
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const loadMissingModels = async () => {
+      const entries = await Promise.all(
+        missing.map(async (id) => {
+          try {
+            const caja = await getCajaById(id);
+            return [id, (caja.modeloProducto ?? "").trim()] as const;
+          } catch {
+            return [id, ""] as const;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setBoxModelsById((prev) => {
+        const next = { ...prev };
+        for (const [id, modelo] of entries) {
+          if (modelo) next[id] = modelo;
+        }
+        return next;
+      });
+    };
+
+    void loadMissingModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [boxModelsById, huecoSeleccionado]);
+
+  useEffect(() => {
     if (!actionMessage) return;
     const timeout = window.setTimeout(() => setActionMessage(null), 2000);
     return () => window.clearTimeout(timeout);
@@ -291,35 +442,62 @@ export default function StockUbicationPage() {
   }, [ubicacionId, detalles]);
 
   useEffect(() => {
-    if (!mostrarFormCaja || formBoxMode !== "registered") return;
+    const paletId = huecoSeleccionado?.pale?.id;
+    if (!paletId) {
+      setSelectedPalletDetail(null);
+      setSelectedPalletBrand(null);
+      return;
+    }
 
     let cancelled = false;
 
-    const loadFreeBoxes = async () => {
+    const loadPalletDetail = async () => {
       try {
-        setIsLoadingFreeBoxes(true);
-        const boxes = await getFreeBoxes();
+        const detail = await getPalletById(paletId);
         if (!cancelled) {
-          setFreeBoxes(boxes);
+          setSelectedPalletDetail(detail);
+          const brandFromPallet = resolvePalletBrand(detail.codigoMarca) ?? resolvePalletBrand(huecoSeleccionado?.pale?.codigoMarca) ?? null;
+          setSelectedPalletBrand(brandFromPallet);
         }
-      } catch (error) {
+      } catch {
         if (!cancelled) {
-          const message = error instanceof ApiHttpError ? error.message : "No se pudieron cargar las cajas libres.";
-          setActionMessage({ type: "error", text: message });
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingFreeBoxes(false);
+          setSelectedPalletDetail(null);
+          setSelectedPalletBrand(resolvePalletBrand(huecoSeleccionado?.pale?.codigoMarca) ?? null);
         }
       }
     };
 
-    void loadFreeBoxes();
+    void loadPalletDetail();
 
     return () => {
       cancelled = true;
     };
-  }, [formBoxMode, mostrarFormCaja]);
+  }, [huecoSeleccionado?.pale?.id]);
+
+  useEffect(() => {
+    if (!mostrarFormPallet || palletActionMode !== "existing") return;
+
+    let cancelled = false;
+    const loadFreePallets = async () => {
+      try {
+        setIsLoadingFreePallets(true);
+        const items = await getFreePallets();
+        if (!cancelled) setFreePallets(items);
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof ApiHttpError ? error.message : "No se pudieron cargar los palés libres.";
+          setActionMessage({ type: "error", text: message });
+        }
+      } finally {
+        if (!cancelled) setIsLoadingFreePallets(false);
+      }
+    };
+
+    void loadFreePallets();
+    return () => {
+      cancelled = true;
+    };
+  }, [mostrarFormPallet, palletActionMode]);
 
   return (
     <div className="container py-4">
@@ -330,9 +508,27 @@ export default function StockUbicationPage() {
             <div className="modal-dialog modal-dialog-scrollable modal-lg">
               <div className="modal-content stock-slot-modal">
               <div className="modal-header">
-                <div>
-                  <p className="stock-slot-modal__eyebrow mb-1">Detalle de ubicación</p>
-                  <h5 className="modal-title stock-slot-modal__title">{huecoSeleccionado.referencia}</h5>
+                <div className="stock-slot-modal__header-main">
+                  <div>
+                    <p className="stock-slot-modal__eyebrow mb-1">Detalle de ubicación</p>
+                    <h5 className="modal-title stock-slot-modal__title">{huecoSeleccionado.referencia}</h5>
+                  </div>
+                  <div className="stock-slot-modal__header-metrics">
+                    <article className="stock-slot-metric-card--compact">
+                      <span className="stock-slot-metric-card__icon" aria-hidden="true">
+                        <i className="bi bi-layout-sidebar-inset" />
+                      </span>
+                      <p className="stock-slot-metric-card__label">Pasillo</p>
+                      <p className="stock-slot-metric-card__value">{huecoSeleccionado.pasillo.numero}</p>
+                    </article>
+                    <article className="stock-slot-metric-card--compact">
+                      <span className="stock-slot-metric-card__icon" aria-hidden="true">
+                        <i className="bi bi-layers" />
+                      </span>
+                      <p className="stock-slot-metric-card__label">Nivel estantería</p>
+                      <p className="stock-slot-metric-card__value">{huecoSeleccionado.estanteria.nivel}</p>
+                    </article>
+                  </div>
                 </div>
                 <button
                   className="btn-close"
@@ -352,23 +548,6 @@ export default function StockUbicationPage() {
                 )}
                 <div className="stock-slot-modal__layout">
                   <section className="stock-slot-modal__left">
-                    <div className="stock-slot-modal__metrics">
-                      <article className="stock-slot-metric-card">
-                        <span className="stock-slot-metric-card__icon" aria-hidden="true">
-                          <i className="bi bi-layout-sidebar-inset" />
-                        </span>
-                        <p className="stock-slot-metric-card__label">Pasillo</p>
-                        <p className="stock-slot-metric-card__value">{huecoSeleccionado.pasillo.numero}</p>
-                      </article>
-                      <article className="stock-slot-metric-card">
-                        <span className="stock-slot-metric-card__icon" aria-hidden="true">
-                          <i className="bi bi-layers" />
-                        </span>
-                        <p className="stock-slot-metric-card__label">Nivel estantería</p>
-                        <p className="stock-slot-metric-card__value">{huecoSeleccionado.estanteria.nivel}</p>
-                      </article>
-                    </div>
-
                     <article className="stock-slot-pallet-card">
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="stock-slot-pallet-card__title mb-0">Información del palé</h6>
@@ -379,42 +558,59 @@ export default function StockUbicationPage() {
 
                       {huecoSeleccionado.pale ? (
                         <div className="stock-slot-pallet-card__grid">
-                          <div className="stock-slot-pallet-card__field">
-                            <p className="stock-slot-pallet-card__label">Material</p>
+                          <div className="stock-slot-pallet-card__field stock-slot-pallet-info-card stock-slot-pallet-card__field--full">
+                            <p className="stock-slot-pallet-card__label">Marca permitida</p>
                             <p className="stock-slot-pallet-card__value">
                               <span className="stock-slot-pallet-card__value-icon" aria-hidden="true">
-                                <i className="bi bi-dot" />
+                                <i className="bi bi-tag" />
                               </span>
+                              {selectedPalletDetail?.codigoMarca || huecoSeleccionado.pale.codigoMarca || "No definida"}
+                            </p>
+                          </div>
+                          <div className="stock-slot-pallet-card__field stock-slot-pallet-info-card">
+                            <p className="stock-slot-pallet-card__label">Material</p>
+                            <p className="stock-slot-pallet-card__value">
+                             
                               {huecoSeleccionado.pale.material}
                             </p>
                           </div>
-                          <div className="stock-slot-pallet-card__field">
+                          <div className="stock-slot-pallet-card__field stock-slot-pallet-info-card">
                             <p className="stock-slot-pallet-card__label">Tipo</p>
                             <p className="stock-slot-pallet-card__value">
-                              <span className="stock-slot-pallet-card__value-icon" aria-hidden="true">
-                                <i className="bi bi-diagram-3" />
-                              </span>
+                             
                               {huecoSeleccionado.pale.tipo}
                             </p>
                           </div>
-                          <div className="stock-slot-pallet-card__field stock-slot-pallet-card__field--full">
+                          <div className="stock-slot-pallet-card__field stock-slot-pallet-card__field--full stock-slot-pallet-info-card">
                             <p className="stock-slot-pallet-card__label">Descripción</p>
                             <p className="stock-slot-pallet-card__value">
                               <span className="stock-slot-pallet-card__value-icon" aria-hidden="true">
                                 <i className="bi bi-card-text" />
                               </span>
-                              {huecoSeleccionado.pale.descripcion}
+                              {selectedPalletDetail?.descripcion || huecoSeleccionado.pale.descripcion}
                             </p>
                           </div>
-                          <div className="stock-slot-pallet-card__field stock-slot-pallet-card__field--full">
+                          <div className="stock-slot-pallet-card__field stock-slot-pallet-card__field--full d-flex flex-wrap gap-2">
                             <button
                               type="button"
-                              className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
+                              className="btn btn-outline-info btn-sm d-inline-flex align-items-center gap-1"
                               onClick={() => {
-                                if (huecoSeleccionado.ubicacionAlmacenId && huecoSeleccionado.pale?.id) {
+                                if (huecoSeleccionado.pale?.id) {
+                                  handleStartMovePallet(huecoSeleccionado.pale.id);
+                                }
+                              }}
+                              disabled={isMovingPallet}
+                            >
+                              <i className="bi bi-arrow-left-right" aria-hidden="true" />
+                              Mover palé
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+                              onClick={() => {
+                                if (huecoSeleccionado.pale?.id) {
                                   setConfirmAction({
-                                    type: "pallet",
-                                    ubicacionId: huecoSeleccionado.ubicacionAlmacenId,
+                                    type: "unassignPallet",
                                     paletId: huecoSeleccionado.pale.id,
                                   });
                                 }
@@ -422,7 +618,24 @@ export default function StockUbicationPage() {
                               disabled={isUnassigningPallet}
                             >
                               <i className="bi bi-x-circle" aria-hidden="true" />
-                              {isUnassigningPallet ? "Desasignando..." : "Quitar palé"}
+                              {isUnassigningPallet ? "Quitando..." : "Bajar palé"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
+                              onClick={() => {
+                                if (huecoSeleccionado.pale?.id) {
+                                  setConfirmAction({
+                                    type: "deletePallet",
+                                    paletId: huecoSeleccionado.pale.id,
+                                  });
+                                }
+                              }}
+                              disabled={isUnassigningPallet || hasBoxesInSelectedPallet}
+                              title={hasBoxesInSelectedPallet ? "Solo puedes borrar el palé cuando no tenga cajas." : undefined}
+                            >
+                              <i className="bi bi-trash3" aria-hidden="true" />
+                              Borrar palé
                             </button>
                           </div>
                         </div>
@@ -463,7 +676,17 @@ export default function StockUbicationPage() {
                                 className="stock-slot-box-list__item stock-slot-box-list__item--button"
                                 onClick={() => handleOpenBoxTerminals(caja)}
                               >
-                                <span>{caja.etiqueta}</span>
+                                <span className="stock-slot-box-list__main">
+                                  <span>{caja.etiqueta}</span>
+                                  <span className="stock-slot-box-list__model">
+                                    {caja.modeloProducto ||
+                                      (caja.terminales?.[0]
+                                        ? `${caja.terminales[0].marca ?? ""} ${caja.terminales[0].modelo ?? ""}`.trim()
+                                        : "") ||
+                                      boxModelsById[caja.id] ||
+                                      "Modelo no definido"}
+                                  </span>
+                                </span>
                                 <span
                                   className={`stock-slot-box-list__capacity ${isCapacityOverflow(caja.id) ? "is-overflow" : ""}`}
                                 >
@@ -515,11 +738,9 @@ export default function StockUbicationPage() {
               {!formBoxMode && (
                 <div className="box-mode-selector">
                   <div className="d-flex justify-content-between align-items-start mb-2">
-                    <h5 className="mb-0 stock-modal-eyebrow-title">Nueva caja</h5>
+                    <h5 className="mb-0 stock-modal-eyebrow-title">¿Que desea hacer?</h5>
                     <button type="button" className="btn-close" aria-label="Cerrar" onClick={cerrarFormCaja} />
                   </div>
-                  <p className="text-muted mb-3">Elige cómo quieres agregar la caja al palé.</p>
-
                   <div className="box-mode-selector__grid">
                     <button type="button" className="box-mode-card" onClick={() => setFormBoxMode("manual")}>
                       <span className="box-mode-card__icon" aria-hidden="true">
@@ -533,7 +754,7 @@ export default function StockUbicationPage() {
                       <span className="box-mode-card__icon" aria-hidden="true">
                         <i className="bi bi-archive" />
                       </span>
-                      <span className="box-mode-card__title">Cajas registradas</span>
+                      <span className="box-mode-card__title">Asignar una caja al palé</span>
                       <span className="box-mode-card__desc">Usar una caja ya registrada en el sistema.</span>
                     </button>
                   </div>
@@ -549,8 +770,7 @@ export default function StockUbicationPage() {
                   <FormBox
                     hueco={huecoActivo}
                     mode={formBoxMode}
-                    freeBoxes={freeBoxes}
-                    isLoadingFreeBoxes={isLoadingFreeBoxes}
+                    allowedBrand={selectedPalletBrand}
                     onSubmitNew={handleCreateBox}
                     onSubmitExisting={handleAssignExistingBox}
                     onCancel={cerrarFormCaja}
@@ -568,43 +788,121 @@ export default function StockUbicationPage() {
           <div className="modal fade show d-block">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content p-3">
-              <h5 className="mb-3 stock-modal-eyebrow-title">Nueva caja</h5>
+                {!palletActionMode && (
+                  <div className="box-mode-selector">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <h5 className="mb-0 stock-modal-eyebrow-title">¿Que desea hacer?</h5>
+                      <button type="button" className="btn-close" aria-label="Cerrar" onClick={cerrarFormPallet} />
+                    </div>
+                    <div className="box-mode-selector__grid">
+                      <button type="button" className="box-mode-card" onClick={() => setPalletActionMode("new")}>
+                        <span className="box-mode-card__icon" aria-hidden="true">
+                          <i className="bi bi-plus-square" />
+                        </span>
+                        <span className="box-mode-card__title">Crear palé nuevo</span>
+                        <span className="box-mode-card__desc">Dar de alta un palé y asignarlo a este hueco.</span>
+                      </button>
 
-              <FormPallet
-                idHueco={huecoActivo.idHueco}
-                onSubmit={async (data) => {
-                  if (huecoActivo.ubicacionAlmacenId === null || typeof huecoActivo.ubicacionAlmacenId === "undefined") {
-                    throw new Error("La ubicación seleccionada no tiene ID real de almacén");
-                  }
+                      <button type="button" className="box-mode-card" onClick={() => setPalletActionMode("existing")}>
+                        <span className="box-mode-card__icon" aria-hidden="true">
+                          <i className="bi bi-grid-3x3-gap" />
+                        </span>
+                        <span className="box-mode-card__title">Asignar palé existente</span>
+                        <span className="box-mode-card__desc">Seleccionar un palé libre ya creado.</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                  const descripcion = data.descripcion || `Palet ${data.material} ${data.tipo}`;
-                  const codigoMarca = `PAL-${data.material.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-                  const payload = {
-                    descripcion,
-                    material: data.material,
-                    tipo: data.tipo,
-                    capacidadMaxCajas: data.capacidadMaxCajas,
-                    codigoMarca,
-                    ubicacionAlmacenId: huecoActivo.ubicacionAlmacenId,
-                    cajas: [] as [],
-                  };
+                {palletActionMode === "new" && (
+                  <>
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <h5 className="mb-0 stock-modal-eyebrow-title">Añadir palé al hueco</h5>
+                      <button type="button" className="btn-close" aria-label="Cerrar" onClick={cerrarFormPallet} />
+                    </div>
+                    <FormPallet
+                      idHueco={huecoActivo.idHueco}
+                      onSubmit={async (data) => {
+                        if (huecoActivo.ubicacionAlmacenId === null || typeof huecoActivo.ubicacionAlmacenId === "undefined") {
+                          throw new Error("La ubicación seleccionada no tiene ID real de almacén");
+                        }
 
-                  console.log("Create pallet request ids:", {
-                    idHueco: huecoActivo.idHueco,
-                    ubicacionAlmacenId: huecoActivo.ubicacionAlmacenId,
-                  });
-                  console.log("Create pallet payload:", payload);
+                        const descripcion =
+                          data.descripcion ||
+                          `Pasillo ${huecoActivo.pasillo.numero} - Estantería ${huecoActivo.estanteria.descripcion} - Nivel ${huecoActivo.estanteria.nivel}`;
+                        const codigoMarca = data.marca.trim();
+                        const payload = {
+                          descripcion,
+                          material: data.material,
+                          tipo: data.tipo,
+                          capacidadMaxCajas: data.capacidadMaxCajas,
+                          codigoMarca,
+                          ubicacionAlmacenId: huecoActivo.ubicacionAlmacenId,
+                          cajas: [] as [],
+                        };
 
-                  await createPallet(payload);
-                  const items = await getWarehouseMap();
-                  setDetalles(items);
-                  refreshSelectedHueco(items);
-                  setMostrarFormPallet(false);
-                }}
-                onCancel={cerrarFormPallet}
-                canSubmit={typeof huecoActivo.ubicacionAlmacenId === "number"}
-                blockedMessage="La ubicación seleccionada no tiene ID real de almacén"
-              />
+                        console.log("Create pallet request ids:", {
+                          idHueco: huecoActivo.idHueco,
+                          ubicacionAlmacenId: huecoActivo.ubicacionAlmacenId,
+                        });
+                        console.log("Create pallet payload:", payload);
+
+                        await createPallet(payload);
+                        const items = await getWarehouseMap();
+                        setDetalles(items);
+                        refreshSelectedHueco(items);
+                        setMostrarFormPallet(false);
+                        setPalletActionMode(null);
+                      }}
+                      onCancel={cerrarFormPallet}
+                      canSubmit={typeof huecoActivo.ubicacionAlmacenId === "number"}
+                      blockedMessage="La ubicación seleccionada no tiene ID real de almacén"
+                    />
+                  </>
+                )}
+
+                {palletActionMode === "existing" && (
+                  <>
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <h5 className="mb-0 stock-modal-eyebrow-title">Asignar palé existente</h5>
+                      <button type="button" className="btn-close" aria-label="Cerrar" onClick={cerrarFormPallet} />
+                    </div>
+                    <div className="stock-box-form stock-box-form--registered">
+                      <div className="mb-3 stock-box-form__group">
+                        <label className="form-label">Palé libre</label>
+                        <select
+                          className="form-select"
+                          value={selectedFreePalletId ?? ""}
+                          onChange={(event) => setSelectedFreePalletId(event.target.value ? Number(event.target.value) : null)}
+                          disabled={isLoadingFreePallets}
+                        >
+                          <option value="">{isLoadingFreePallets ? "Cargando palés..." : "Selecciona un palé libre"}</option>
+                          {freePallets.map((pallet) => (
+                            <option key={pallet.id} value={pallet.id}>
+                              {`Palé #${pallet.id} - ${pallet.codigoMarca ?? "Sin marca"} - ${pallet.material}/${pallet.tipo} - Cap. ${pallet.capacidadMaxCajas}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="d-flex gap-2 justify-content-end">
+                        <button
+                          type="button"
+                          className="btn stock-box-form__btn stock-box-form__btn--save"
+                          disabled={selectedFreePalletId === null || isLoadingFreePallets}
+                          onClick={() => void handleAssignExistingPallet()}
+                        >
+                          <i className="bi bi-check2-circle" aria-hidden="true" />
+                          Guardar
+                        </button>
+                        <button type="button" className="btn stock-box-form__btn stock-box-form__btn--cancel" onClick={cerrarFormPallet}>
+                          <i className="bi bi-x-circle" aria-hidden="true" />
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -614,6 +912,22 @@ export default function StockUbicationPage() {
       {!huecoSeleccionado && (
         <>
           <h5 className="mb-4">Mapa de Almacén</h5>
+          {movePaletIdFromQuery !== null && (
+            <div className="alert alert-info py-2 d-flex justify-content-between align-items-center">
+              <span>
+                Selecciona un hueco para mover el palé <strong>#{movePaletIdFromQuery}</strong>.
+              </span>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => navigate("/stock", { replace: true })}
+                disabled={isMovingPallet}
+              >
+                Cancelar modo mover
+              </button>
+            </div>
+          )}
+          {actionMessage && <div className={`alert py-2 ${actionMessage.type === "success" ? "alert-success" : "alert-danger"}`}>{actionMessage.text}</div>}
           {mapError && <div className="alert alert-danger py-2">{mapError}</div>}
           {isLoadingMap ? (
             <div className="text-muted">Cargando mapa...</div>
@@ -636,17 +950,19 @@ export default function StockUbicationPage() {
       <SNSearchDeleteConfirmModal
         isOpen={confirmAction !== null}
         isLoading={isUnassigningPallet || isUnassigningBoxId !== null}
-        title="Confirmar desasignación"
+        title="Confirmar acción"
         message={
           confirmAction?.type === "box"
             ? `¿Seguro que quieres desasignar la caja ${confirmAction.cajaId} del palé ${confirmAction.paletId}?`
-            : confirmAction?.type === "pallet"
-              ? `¿Seguro que quieres desasignar el palé ${confirmAction.paletId} del habitáculo?`
+            : confirmAction?.type === "unassignPallet"
+              ? `¿Seguro que quieres quitar el palé ${confirmAction.paletId} de esta ubicación?`
+              : confirmAction?.type === "deletePallet"
+              ? `¿Seguro que quieres eliminar el palé ${confirmAction.paletId}? Esta acción no se puede deshacer.`
               : ""
         }
-        confirmLabel="Desasignar"
+        confirmLabel={confirmAction?.type === "unassignPallet" ? "Quitar palé" : "Eliminar"}
         cancelLabel="Cancelar"
-        confirmVariant="danger"
+        confirmVariant={confirmAction?.type === "unassignPallet" ? "primary" : "danger"}
         onCancel={() => {
           if (isUnassigningPallet || isUnassigningBoxId !== null) return;
           setConfirmAction(null);
@@ -657,7 +973,11 @@ export default function StockUbicationPage() {
             void handleUnassignBox(confirmAction.paletId, confirmAction.cajaId).finally(() => setConfirmAction(null));
             return;
           }
-          void handleUnassignPallet(confirmAction.ubicacionId, confirmAction.paletId).finally(() => setConfirmAction(null));
+          if (confirmAction.type === "unassignPallet") {
+            void handleUnassignPallet(confirmAction.paletId).finally(() => setConfirmAction(null));
+            return;
+          }
+          void handleDeletePallet(confirmAction.paletId).finally(() => setConfirmAction(null));
         }}
       />
     </div>
