@@ -503,9 +503,9 @@ export default function StockUbicationPage() {
     <div className="container py-4">
       {huecoSeleccionado && (
         <>
-          <div className="modal-backdrop fade show" />
-          <div className="modal fade show d-block" role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-dialog-scrollable modal-lg">
+          <div className="modal-backdrop fade show stock-overlay-backdrop" />
+          <div className="modal fade show d-block stock-overlay-modal" role="dialog" aria-modal="true">
+            <div className="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
               <div className="modal-content stock-slot-modal">
               <div className="modal-header">
                 <div className="stock-slot-modal__header-main">
@@ -732,7 +732,8 @@ export default function StockUbicationPage() {
 
       {mostrarFormCaja && huecoActivo && (
         <>
-          <div className="modal fade show d-block">
+          <div className="modal-backdrop fade show stock-nested-modal-backdrop" />
+          <div className="modal fade show d-block stock-nested-modal">
             <div className="modal-dialog modal-dialog-centered">
               <div className={`modal-content p-3 ${formBoxMode === "registered" ? "stock-box-modal-content--registered" : ""}`.trim()}>
               {!formBoxMode && (
@@ -785,7 +786,8 @@ export default function StockUbicationPage() {
 
       {mostrarFormPallet && huecoActivo && (
         <>
-          <div className="modal fade show d-block">
+          <div className="modal-backdrop fade show stock-nested-modal-backdrop" />
+          <div className="modal fade show d-block stock-nested-modal">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content p-3">
                 {!palletActionMode && (
