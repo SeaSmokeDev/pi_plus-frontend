@@ -25,14 +25,14 @@ export default function PasilloAlmacen({ pasilloId, numero, ubicaciones, onHueco
 
   return (
     <div className="mt-3">
-      <div className="bg-white px-3 rounded-1 d-flex justify-content-start gap-4 align-items-end">
+      <div className="stock-aisle-track px-3 rounded-1 d-flex justify-content-start gap-4 align-items-end">
         {Array.from(estanteriasMap.entries())
           .sort(([, huecosX], [, huecosY]) => huecosX[0].estanteria.descripcion.localeCompare(huecosY[0].estanteria.descripcion))
           .map(([estanteriaId, huecos]) => (
             <Shelf key={estanteriaId} estanteriaId={estanteriaId} huecos={huecos} onHuecoClick={onHuecoClick} />
           ))}
       </div>
-      <h4 key={pasilloId} className="fw-lighter px-2">
+      <h4 key={pasilloId} className="fw-lighter px-2 stock-aisle-title">
         Pasillo {numero}
       </h4>
     </div>

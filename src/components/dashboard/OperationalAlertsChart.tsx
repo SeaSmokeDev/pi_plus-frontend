@@ -5,7 +5,14 @@ type AlertItem = {
   total: number;
 };
 
-const BAR_COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#0891b2", "#7c3aed"];
+const BAR_COLORS = [
+  "var(--color-primary)",
+  "var(--color-success-text)",
+  "var(--color-warning-text)",
+  "var(--color-danger-text)",
+  "var(--color-text-secondary)",
+  "var(--color-border)",
+];
 
 function normalizeLabel(value: string): string {
   return value.replaceAll("_", " ");
@@ -24,7 +31,7 @@ export default function OperationalAlertsChart({
   const max = Math.max(...top.map((item) => item.total), 1);
 
   return (
-    <div className="card shadow-sm dashboard-operational-alerts h-100">
+    <div className="card dashboard-operational-alerts h-100">
       <div className="card-body p-4">
         <h3 className="dashboard-operational-alerts__title">Alertas operativas</h3>
         <p className="dashboard-operational-alerts__subtitle">Terminales por estado</p>
@@ -58,4 +65,3 @@ export default function OperationalAlertsChart({
     </div>
   );
 }
-

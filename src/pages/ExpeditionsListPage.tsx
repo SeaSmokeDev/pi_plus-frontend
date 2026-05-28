@@ -8,6 +8,7 @@ import ExpeditionQuickViewModal from "../components/expeditions/ExpeditionQuickV
 import { useExpeditions } from "../hooks/useExpeditions";
 import { useUsers } from "../hooks/useUsers";
 import type { ExpeditionGroupList, ExpeditionFilters } from "../types";
+import "../styles/ExpeditionsPage.scss";
 
 const todayLabel = new Intl.DateTimeFormat("es-ES", {
   dateStyle: "full",
@@ -139,7 +140,7 @@ export default function ExpeditionsListPage() {
   }
 
   return (
-    <div className="container-fluid p-4 d-flex flex-column gap-4">
+    <div className="container-fluid p-4 d-flex flex-column gap-4 expeditions-page">
       <section className="card border-0 shadow-sm bg-primary text-white">
         <div className="card-body p-4">
           <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">

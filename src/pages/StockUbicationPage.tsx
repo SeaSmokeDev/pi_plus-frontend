@@ -125,7 +125,7 @@ export default function StockUbicationPage() {
   }, []);
 
   const pasillosMap = new Map<number, WarehouseMapItem[]>();
-  const hasBoxesInSelectedPallet = (selectedPalletDetail?.cajas?.length ?? huecoSeleccionado?.cajas.length ?? 0) > 0;
+  const hasBoxesInSelectedPallet = (huecoSeleccionado?.cajas.length ?? 0) > 0;
 
   const getCapacityLabel = (cajaId: number) => {
     const capacity = boxCapacities[cajaId];

@@ -13,8 +13,8 @@ export default function EstanteriaAlmacen({ estanteriaId, huecos, onHuecoClick }
   const { descripcion } = huecos[0].estanteria;
 
   return (
-    <div className="m-1">
-      <div className="bg-secondary bg-opacity-75 p-1 d-flex flex-column justify-content-between gap-1 shadow-lg" style={{ width: "max-content" }}>
+    <div className="stock-shelf-wrapper">
+      <div className="stock-shelf p-1 d-flex flex-column justify-content-between gap-1" style={{ width: "max-content" }}>
         <div className="d-flex flex-column gap-2 flex-wrap">
           {[...huecos]
             .sort((b, a) => Number(a.estanteria.nivel) - Number(b.estanteria.nivel))
@@ -22,7 +22,7 @@ export default function EstanteriaAlmacen({ estanteriaId, huecos, onHuecoClick }
               <Slot key={ubicacion.idHueco} ubicacion={ubicacion} onClick={onHuecoClick} />
             ))}
         </div>
-        <div className="fw-bold text-center" key={estanteriaId}>
+        <div className="fw-bold text-center stock-shelf__label" key={estanteriaId}>
           {descripcion}
         </div>
       </div>
