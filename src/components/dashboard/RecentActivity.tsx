@@ -92,7 +92,7 @@ export default function RecentActivity({
   const statuses = buildStatusItems(expediciones);
 
   return (
-    <div className="card shadow-sm dashboard-recent-activity">
+    <div className="card dashboard-recent-activity">
       <div className="card-body p-4">
         <h3 className="dashboard-recent-activity__title">Expediciones recientes</h3>
         <p className="dashboard-recent-activity__subtitle">Últimos 7 días</p>

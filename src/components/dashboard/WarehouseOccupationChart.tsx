@@ -28,7 +28,7 @@ export default function WarehouseOccupationChart({
   const max = Math.max(1, ...distribucionPasillo.map((item) => Math.max(item.ocupados, item.libres)));
 
   return (
-    <div className="card shadow-sm dashboard-warehouse-occupation">
+    <div className="card dashboard-warehouse-occupation">
       <div className="card-body p-4">
         <div className="dashboard-warehouse-occupation__header">
           <h3 className="dashboard-warehouse-occupation__title">Ocupación almacén</h3>
@@ -86,4 +86,3 @@ export default function WarehouseOccupationChart({
     </div>
   );
 }
-

@@ -10,7 +10,7 @@ const COLOR_CLASSES = ["usage-primary", "usage-success", "usage-danger", "usage-
 function buildConicGradient(items: ModelUsage[]): string {
   const total = items.reduce((sum, item) => sum + item.total, 0);
   if (total <= 0) {
-    return "conic-gradient(#e2e8f0 0deg, #e2e8f0 360deg)";
+    return "conic-gradient(var(--color-border) 0deg, var(--color-border) 360deg)";
   }
 
   let acc = 0;
@@ -19,7 +19,15 @@ function buildConicGradient(items: ModelUsage[]): string {
     acc += item.total;
     const end = (acc / total) * 360;
     const color =
-      index === 0 ? "#2563eb" : index === 1 ? "#16a34a" : index === 2 ? "#dc2626" : index === 3 ? "#0891b2" : "#f59e0b";
+      index === 0
+        ? "var(--color-primary)"
+        : index === 1
+          ? "var(--color-success-text)"
+          : index === 2
+            ? "var(--color-danger-text)"
+            : index === 3
+              ? "var(--color-warning-text)"
+              : "var(--color-text-secondary)";
     return `${color} ${start}deg ${end}deg`;
   });
 
@@ -40,7 +48,7 @@ export default function ModelsUsageCard({
   const chartBg = buildConicGradient(top);
 
   return (
-    <div className="card shadow-sm dashboard-models-usage h-100">
+    <div className="card dashboard-models-usage h-100">
       <div className="card-body p-4">
         <h3 className="dashboard-models-usage__title">Modelos más usados en cajas</h3>
         <p className="dashboard-models-usage__subtitle">Overview</p>
@@ -85,4 +93,3 @@ export default function ModelsUsageCard({
     </div>
   );
 }
-
