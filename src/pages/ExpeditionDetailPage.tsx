@@ -64,6 +64,7 @@ export default function ExpeditionDetailPage() {
   const [loadingInitialData, setLoadingInitialData] = useState(true);
   const [submitAction, setSubmitAction] = useState<SubmitAction | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const {
     loading: loadingDetail,
@@ -263,6 +264,21 @@ export default function ExpeditionDetailPage() {
     }
   }
 
+  function handleRequestConfirmExpedition() {
+    setSubmitError(null);
+    setIsConfirmModalOpen(true);
+  }
+
+  function handleCloseConfirmModal() {
+    if (submitAction) return;
+    setIsConfirmModalOpen(false);
+  }
+
+  async function handleAcceptConfirmExpedition() {
+    setIsConfirmModalOpen(false);
+    await submitExpedition("confirm");
+  }
+
   function handleAddBox(box: BoxExpeditionDetail) {
     const alreadyExists = selectedBoxes.some((selectedBox) => selectedBox.id === box.id);
     if (alreadyExists) return;
@@ -306,7 +322,7 @@ export default function ExpeditionDetailPage() {
             form={form}
             onChange={handleFormChange}
             onSave={() => void submitExpedition("save")}
-            onConfirm={() => void submitExpedition("confirm")}
+            onConfirm={handleRequestConfirmExpedition}
             onCancel={handleCancel}
             saving={isSaving}
             confirming={isConfirming}
@@ -322,6 +338,51 @@ export default function ExpeditionDetailPage() {
           <ExpeditionPaymentsPanel boxes={selectedBoxes} />
         </div>
       </div>
+
+      {isConfirmModalOpen && (
+        <>
+          <div className="modal-backdrop fade show" />
+          <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow">
+                <div className="modal-header">
+                  <h2 className="modal-title h5 mb-0">Confirmar expedicion</h2>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Cerrar"
+                    onClick={handleCloseConfirmModal}
+                    disabled={Boolean(submitAction)}
+                  />
+                </div>
+
+                <div className="modal-body">
+                  <p className="mb-0">Estas seguro de enviar esta expedicion?</p>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleCloseConfirmModal}
+                    disabled={Boolean(submitAction)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => void handleAcceptConfirmExpedition()}
+                    disabled={Boolean(submitAction)}
+                  >
+                    {isConfirming ? "Enviando..." : "Si, enviar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
