@@ -5,6 +5,7 @@ import type {
   ExpeditionList,
   ExpeditionGroupList,
   ExpeditionQuickView,
+  ExpeditionBatchEdit,
 } from "../types";
 import { apiRequest } from "./apiClient";
 
@@ -100,6 +101,12 @@ export function searchExpeditionsList(filters: ExpeditionFilters) {
 export function getExpeditionQuickView(reference: string) {
   return apiRequest<ExpeditionQuickView>(
     `/expediciones/referencia/${reference}/resumen`
+  );
+}
+
+export function getExpeditionEdit(reference: string) {
+  return apiRequest<ExpeditionBatchEdit>(
+    `/expediciones/referencia/${reference}/edit`
   );
 }
 

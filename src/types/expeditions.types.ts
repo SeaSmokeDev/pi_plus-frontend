@@ -1,3 +1,4 @@
+import type { BoxExpeditionDetail } from "./box.types";
 import type { ApiDate, ID } from "./common.types";
 
 export type ExpeditionStatus = "abierta" | "en_transito" | "recibida";
@@ -93,4 +94,15 @@ export interface ExpeditionQuickView {
   totalExpediciones: number;
   totalTerminales: number;
   terminales: ExpeditionQuickViewPayment[];
+}
+
+export interface ExpeditionBatchEdit{
+  referenciaExpedicion: string;
+  direccionDestino: string;
+  paquetes: number | null;
+  peso: number | null;
+  notas: string | null;
+  usuarioId: ID;
+  username: string;
+  cajas: BoxExpeditionDetail[];
 }
