@@ -56,6 +56,23 @@
   border-color: var(--color-border) !important;
 }
 
+.expeditions-page .expedition-date {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-card) 88%, var(--color-primary-light) 12%),
+      color-mix(in srgb, var(--color-primary-light) 75%, var(--color-card) 25%)
+    ) !important;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-primary) 14%, transparent) !important;
+}
+
+.expeditions-page .expedition-date .text-muted {
+  color: var(--color-primary) !important;
+  font-weight: 700;
+}
+
 .expeditions-page .border-info-subtle,
 .expeditions-page .bg-info-subtle {
   background-color: var(--color-primary-light) !important;
@@ -72,6 +89,22 @@
   background-color: color-mix(in srgb, var(--color-card) 92%, var(--color-primary-light) 8%);
   border-color: var(--color-border);
   color: var(--color-text-primary);
+  border-radius: 10px;
+}
+
+.expeditions-page .input-group {
+  border-radius: 10px;
+}
+
+.expeditions-page .input-group > .form-control {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.expeditions-page .input-group > .input-group-text {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  color: var(--color-primary);
 }
 
 .expeditions-page .form-control:focus,
@@ -94,6 +127,12 @@
 .expeditions-page .dropdown-item:focus {
   background-color: var(--color-primary-light);
   color: var(--color-primary);
+}
+
+.expeditions-page .position-absolute.bg-white {
+  background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
+  border-radius: 10px !important;
 }
 
 .expeditions-page .table {
@@ -149,22 +188,53 @@
   --bs-btn-hover-border-color: color-mix(in srgb, var(--color-primary) 82%, var(--color-text-primary) 18%);
   --bs-btn-disabled-bg: color-mix(in srgb, var(--color-primary) 55%, var(--color-card) 45%);
   --bs-btn-disabled-border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-card) 45%);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .expeditions-page .btn-outline-primary {
   --bs-btn-color: var(--color-primary);
-  --bs-btn-border-color: var(--color-primary);
+  --bs-btn-bg: color-mix(in srgb, var(--color-primary-light) 70%, var(--color-card) 30%);
+  --bs-btn-border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  --bs-btn-hover-color: var(--color-card);
   --bs-btn-hover-bg: var(--color-primary);
   --bs-btn-hover-border-color: var(--color-primary);
+  --bs-btn-active-color: var(--color-card);
+  --bs-btn-active-bg: var(--color-primary);
+  --bs-btn-active-border-color: var(--color-primary);
+  border-radius: 10px;
+  font-weight: 600;
 }
 
 .expeditions-page .btn-outline-secondary,
 .expeditions-page .btn-outline-dark {
-  --bs-btn-color: var(--color-text-secondary);
-  --bs-btn-border-color: var(--color-border);
+  --bs-btn-color: var(--color-text-primary);
+  --bs-btn-bg: color-mix(in srgb, var(--color-card) 82%, var(--color-primary-light) 18%);
+  --bs-btn-border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
   --bs-btn-hover-color: var(--color-text-primary);
-  --bs-btn-hover-bg: var(--color-primary-light);
-  --bs-btn-hover-border-color: var(--color-border);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--color-primary-light) 72%, var(--color-card) 28%);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border));
+  --bs-btn-active-color: var(--color-text-primary);
+  --bs-btn-active-bg: color-mix(in srgb, var(--color-primary-light) 76%, var(--color-card) 24%);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border));
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.expeditions-page--list article .btn-outline-secondary:not(:disabled) {
+  --bs-btn-color: var(--color-warning-text-dark);
+  --bs-btn-bg: var(--color-warning-bg);
+  --bs-btn-border-color: color-mix(in srgb, var(--color-warning-text) 55%, var(--color-border));
+  --bs-btn-hover-color: var(--color-warning-surface);
+  --bs-btn-hover-bg: var(--color-warning-text);
+  --bs-btn-hover-border-color: var(--color-warning-text);
+}
+
+.expeditions-page--list article .btn-outline-secondary:disabled {
+  --bs-btn-disabled-color: var(--color-text-secondary);
+  --bs-btn-disabled-bg: color-mix(in srgb, var(--color-card) 86%, var(--color-border) 14%);
+  --bs-btn-disabled-border-color: var(--color-border);
+  opacity: 0.75;
 }
 
 .expeditions-page .btn-outline-danger {
@@ -216,7 +286,21 @@
   --bs-btn-color: var(--color-text-primary);
 }
 
-.expedition-date{
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
+:root[data-theme="dark"] .expeditions-page .expedition-date {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-light) 84%, var(--color-card) 16%),
+      color-mix(in srgb, var(--color-card) 78%, var(--color-primary) 22%)
+    ) !important;
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+}
+
+:root[data-theme="dark"] .expeditions-page--list article .btn-outline-secondary:not(:disabled) {
+  --bs-btn-color: var(--color-warning-text);
+  --bs-btn-bg: color-mix(in srgb, var(--color-warning-bg) 82%, var(--color-card) 18%);
+  --bs-btn-border-color: color-mix(in srgb, var(--color-warning-text) 56%, var(--color-border));
+  --bs-btn-hover-color: var(--color-card);
+  --bs-btn-hover-bg: var(--color-warning-text-dark);
+  --bs-btn-hover-border-color: var(--color-warning-text-dark);
 }

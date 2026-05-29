@@ -154,7 +154,7 @@ export default function ExpeditionsListPage() {
               </p>
             </div>
 
-            <div className="bg-white text-dark rounded-3 px-4 py-3 shadow-sm">
+            <div className="expedition-date bg-white text-dark rounded-3 px-4 py-3 shadow-sm">
               <div className="text-muted small mb-1">Hoy</div>
               <div className="fw-semibold text-capitalize">{todayLabel}</div>
             </div>
