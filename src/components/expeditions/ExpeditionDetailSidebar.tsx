@@ -2,22 +2,23 @@ import type { ExpeditionDraftData } from "../../types";
 
 type ExpeditionDetailSidebarProps = {
   title: string;
-  submitLabel: string;
   form: ExpeditionDraftData;
   onChange: (field: keyof ExpeditionDraftData, value: string) => void;
-  onSubmit: () => void;
   onCancel: () => void;
+  onSave: () => void;
+  onConfirm: () => void;
+  saving?: boolean;
+  confirming?: boolean;
 };
 
 export default function ExpeditionDetailSidebar({
   title,
-  submitLabel,
   form,
   onChange,
-  onSubmit,
+  onSave,
+  onConfirm,
   onCancel,
 }: ExpeditionDetailSidebarProps) {
-
   return (
     <section className="card border-0 shadow-sm">
       <div className="card-header bg-white py-3">
@@ -51,18 +52,6 @@ export default function ExpeditionDetailSidebar({
           </div>
 
           <div className="col-12 col-md-6">
-            <label className="form-label fw-semibold">
-              Fecha/Hora de envio
-            </label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              value={form.fechaEnvio ?? ""}
-              onChange={(event) => onChange("fechaEnvio", event.target.value)}
-            />
-          </div>
-
-          <div className="col-12 col-md-6">
             <label className="form-label fw-semibold">Bultos</label>
             <input
               className="form-control"
@@ -93,15 +82,16 @@ export default function ExpeditionDetailSidebar({
       </div>
 
       <div className="card-footer bg-white d-flex flex-wrap gap-2">
-        <button type="button" className="btn btn-primary" onClick={onSubmit}>
-          {submitLabel}
-        </button>
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={onCancel}
-        >
+        <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
           Cancelar
+        </button>
+
+        <button type="button" className="btn btn-outline-primary" onClick={onSave}>
+          Guardar
+        </button>
+
+        <button type="button" className="btn btn-primary" onClick={onConfirm}>
+          Confirmar
         </button>
       </div>
     </section>

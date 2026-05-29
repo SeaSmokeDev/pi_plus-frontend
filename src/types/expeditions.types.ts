@@ -33,7 +33,6 @@ export interface ExpeditionGroupList {
   referenciaExpedicion: string;
   fechaCreacion: ApiDate;
   fechaRecepcion: ApiDate | null;
-  fechaModificacion: ApiDate | null;
   fechaEnvio: ApiDate | null;
   direccionDestino: string;
   username: string;

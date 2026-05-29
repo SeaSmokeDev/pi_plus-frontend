@@ -191,21 +191,6 @@ export default function CreateExpeditionModal({
                 </div>
 
                 <div className="col-12 col-lg-6">
-                  <label htmlFor="sent-at" className="form-label fw-semibold">
-                    Fecha/Hora de envio
-                  </label>
-                  <input
-                    id="sent-at"
-                    type="datetime-local"
-                    className="form-control"
-                    value={form.fechaEnvio}
-                    onChange={(event) =>
-                      handleChange("fechaEnvio", event.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="col-12 col-lg-6">
                   <label htmlFor="packages" className="form-label fw-semibold">
                     Bultos
                   </label>
