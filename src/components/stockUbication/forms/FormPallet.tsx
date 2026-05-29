@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PalletMaterial, PalletType } from "../../../services/palletService";
+import { getTerminalBrands } from "../../../services/terminalCatalogService";
 
 interface NuevoPalePayload {
   descripcion: string;
+  marca: string;
   material: PalletMaterial;
   tipo: PalletType;
   capacidadMaxCajas: number;
@@ -20,16 +22,46 @@ const CAPACIDAD_FIJA = 8;
 
 export default function FormPallet({ idHueco, onSubmit, onCancel, canSubmit = true, blockedMessage }: FormPalletProps) {
   const [descripcion, setDescripcion] = useState("");
+  const [marca, setMarca] = useState("");
   const [material, setMaterial] = useState<PalletMaterial | "">("");
   const [tipo, setTipo] = useState<PalletType | "">("");
+  const [marcas, setMarcas] = useState<string[]>([]);
+  const [isLoadingMarcas, setIsLoadingMarcas] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadBrands = async () => {
+      try {
+        setIsLoadingMarcas(true);
+        const items = await getTerminalBrands();
+        if (!cancelled) {
+          setMarcas(items);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(error instanceof Error ? error.message : "No se pudieron cargar las marcas.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingMarcas(false);
+        }
+      }
+    };
+
+    void loadBrands();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!material || !tipo) {
-      setErrorMessage("Selecciona material y tipo.");
+    if (!marca || !material || !tipo) {
+      setErrorMessage("Selecciona marca, material y tipo.");
       return;
     }
     if (!canSubmit) {
@@ -43,6 +75,7 @@ export default function FormPallet({ idHueco, onSubmit, onCancel, canSubmit = tr
 
       await onSubmit({
         descripcion: descripcion.trim(),
+        marca,
         material,
         tipo,
         capacidadMaxCajas: CAPACIDAD_FIJA,
@@ -57,6 +90,24 @@ export default function FormPallet({ idHueco, onSubmit, onCancel, canSubmit = tr
   return (
     <form onSubmit={handleSubmit} className="stock-pallet-form">
       <h4 className="mb-3 stock-pallet-form__title">Añadir palé al hueco</h4>
+
+      <div className="mb-3 stock-pallet-form__group">
+        <label className="form-label">Marca permitida</label>
+        <select
+          className="form-select"
+          value={marca}
+          onChange={(e) => setMarca(e.target.value)}
+          required
+          disabled={isLoadingMarcas}
+        >
+          <option value="">{isLoadingMarcas ? "Cargando marcas..." : "Selecciona una marca"}</option>
+          {marcas.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="mb-3 stock-pallet-form__group" key={`idUbicacionAlmacen-${idHueco}`}>
         <label className="form-label">Material</label>

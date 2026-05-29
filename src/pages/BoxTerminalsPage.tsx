@@ -25,8 +25,11 @@ type BoxTerminalsLocationState = {
 
 type BoxTerminalRow = {
   sn: string;
+  marca?: string;
+  modelo?: string;
   isValid: boolean;
   reason?: string;
+  reasonCode?: ValidarTerminalResponse["motivo"];
   scannedAt: string;
 };
 
@@ -51,6 +54,30 @@ function reasonToMessage(response: ValidarTerminalResponse): string {
     default:
       return "No válido para esta caja.";
   }
+}
+
+function normalizeText(value?: string | null): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function isModelActuallyCompatible(response: ValidarTerminalResponse): boolean {
+  if (response.motivo !== "MODELO_NO_COMPATIBLE") return false;
+  const terminalMarca = normalizeText(response.terminal?.marca);
+  const terminalModelo = normalizeText(response.terminal?.modelo);
+  const cajaModeloProducto = normalizeText(response.caja?.modeloProducto);
+  if (!terminalModelo || !cajaModeloProducto) return false;
+
+  const composed = normalizeText(`${terminalMarca} ${terminalModelo}`);
+  return (
+    cajaModeloProducto === terminalModelo ||
+    cajaModeloProducto === composed ||
+    cajaModeloProducto.endsWith(` ${terminalModelo}`)
+  );
 }
 
 export default function BoxTerminalsPage() {
@@ -87,18 +114,22 @@ export default function BoxTerminalsPage() {
   const hasInvalidRows = useMemo(() => rows.some((row) => !row.isValid), [rows]);
   const canSubmit = rows.length > 0 && !hasInvalidRows && Number.isFinite(parsedBoxId);
 
-  const loadBoxData = async (cajaId: number) => {
+  const loadBoxData = async (cajaId: number, options?: { preserveRows?: boolean }) => {
     const caja = await getCajaById(cajaId);
 
     const apiRows: BoxTerminalRow[] = (caja.terminales ?? [])
       .map((terminal) => ({
         sn: terminal.numeroSerie?.trim().toUpperCase() ?? "",
+        marca: terminal.marca?.trim() ?? "",
+        modelo: terminal.modelo?.trim() ?? "",
         isValid: true,
         scannedAt: "Precargado",
       }))
       .filter((row) => row.sn.length > 0);
 
-    setRows(apiRows);
+    if (!options?.preserveRows) {
+      setRows(apiRows);
+    }
     setBoxInfo({
       etiqueta: caja.etiqueta ?? state?.etiqueta ?? "",
       marca: caja.terminales?.[0]?.marca ?? state?.marca ?? "",
@@ -147,14 +178,24 @@ export default function BoxTerminalsPage() {
 
   const validateSN = async (sn: string): Promise<BoxTerminalRow> => {
     const response = await validateTerminalForBox(parsedBoxId, { sn });
+    console.log("[validateTerminalForBox] response", { cajaId: parsedBoxId, sn, response });
 
-    if (response.valido) {
-      return { sn, isValid: true, scannedAt: nowTime() };
+    if (response.valido || isModelActuallyCompatible(response)) {
+      return {
+        sn,
+        marca: response.terminal?.marca?.trim() ?? "",
+        modelo: response.terminal?.modelo?.trim() ?? "",
+        isValid: true,
+        scannedAt: nowTime(),
+      };
     }
 
     return {
       sn,
+      marca: response.terminal?.marca?.trim() ?? "",
+      modelo: response.terminal?.modelo?.trim() ?? "",
       isValid: false,
+      reasonCode: response.motivo,
       reason: reasonToMessage(response),
       scannedAt: nowTime(),
     };
@@ -184,6 +225,10 @@ export default function BoxTerminalsPage() {
     try {
       setIsAdding(true);
       const row = await validateSN(sn);
+      if (!row.isValid && row.reasonCode === "TERMINAL_NO_EXISTE") {
+        setErrorMessage("El terminal no existe.");
+        return;
+      }
       setRows((prev) => [...prev, row]);
       setManualSN("");
     } catch (error) {
@@ -215,9 +260,23 @@ export default function BoxTerminalsPage() {
       setDeletingSn(normalized);
       const response = await unassignTerminalFromBox(parsedBoxId, normalized);
       setSuccessMessage(response.mensaje || "Terminal desasignado con éxito.");
-      await loadBoxData(parsedBoxId);
+      setRows((prev) => prev.filter((row) => row.sn !== normalized));
+      await loadBoxData(parsedBoxId, { preserveRows: true });
     } catch (error) {
       if (error instanceof ApiHttpError) {
+        const backendMessage = (error.message || "").toLowerCase();
+        if ((error.message || "").toLowerCase().includes("no está asociado")) {
+          setRows((prev) => prev.filter((row) => row.sn !== normalized));
+          setSuccessMessage("El terminal ya no estaba asociado a la caja. Se retiró del listado.");
+          await loadBoxData(parsedBoxId, { preserveRows: true });
+          return;
+        }
+        if (backendMessage.includes("otra caja") || backendMessage.includes("ya asociado")) {
+          setRows((prev) => prev.filter((row) => row.sn !== normalized));
+          setSuccessMessage("El terminal pertenece a otra caja. Se retiró del listado local.");
+          await loadBoxData(parsedBoxId, { preserveRows: true });
+          return;
+        }
         setErrorMessage(error.message || "No se pudo desasignar el terminal.");
       } else {
         setErrorMessage("No se pudo desasignar el terminal.");
@@ -328,7 +387,7 @@ export default function BoxTerminalsPage() {
       <div className="card shadow-sm box-terminals-card">
         <div className="card-header bg-transparent box-terminals-card__header">
           <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-            <h1 className="h3 mb-0">Nueva caja</h1>
+            <h1 className="h3 mb-0">Agregar terminales </h1>
             <button type="button" className="btn box-terminals-btn box-terminals-btn--outline d-inline-flex align-items-center gap-2" onClick={() => setIsScannerOpen(true)}>
               <span className="material-symbols-outlined">qr_code_scanner</span>
               Escanear cajas
@@ -343,11 +402,7 @@ export default function BoxTerminalsPage() {
               <input className="form-control" value={boxInfo.etiqueta} readOnly />
             </div>
             <div className="col-12 col-md-6 col-xl-2">
-              <label className="form-label fw-semibold">Marca</label>
-              <input className="form-control" value={boxInfo.marca} readOnly />
-            </div>
-            <div className="col-12 col-md-6 col-xl-2">
-              <label className="form-label fw-semibold">Modelo</label>
+              <label className="form-label fw-semibold">Marca + Modelo</label>
               <input className="form-control" value={boxInfo.modelo} readOnly />
             </div>
             <div className="col-12 col-md-6 col-xl-2">
@@ -357,10 +412,10 @@ export default function BoxTerminalsPage() {
             <div className="col-12 col-md-6 col-xl-4">
               <label className="form-label fw-semibold">Capacidad máxima</label>
               <div className="box-terminals-capacity">
+                <input className="form-control" value={capacidadMaxima} readOnly />
                 <span className="box-terminals-capacity__icon" aria-hidden="true">
                   <i className="bi bi-box-seam" />
                 </span>
-                <input className="form-control" value={capacidadMaxima} readOnly />
               </div>
               {capacityStatus === "error" && <div className="form-text text-danger">Capacidad no disponible.</div>}
             </div>
@@ -394,15 +449,16 @@ export default function BoxTerminalsPage() {
                 <tr>
                   <th>#</th>
                   <th>S/N TERMINAL</th>
+                  <th>MARCA</th>
+                  <th>MODELO</th>
                   <th>ESTADO</th>
-                  <th>HORA ESCANEO</th>
                   <th className="text-end">ACCIÓN</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-muted">
+                    <td colSpan={7} className="text-center py-4 text-muted">
                       Todavía no hay terminales añadidos.
                     </td>
                   </tr>
@@ -412,13 +468,14 @@ export default function BoxTerminalsPage() {
                   <tr key={row.sn}>
                     <td>{index + 1}</td>
                     <td className="fw-semibold">{row.sn}</td>
+                    <td>{row.marca || "-"}</td>
+                    <td>{row.modelo || "-"}</td>
                     <td>
                       <span className={`badge rounded-pill ${row.isValid ? "text-bg-success" : "text-bg-danger"}`}>
                         {row.isValid ? "Válido" : "Inválido"}
                       </span>
                       {!row.isValid && row.reason && <div className="small text-danger mt-1">{row.reason}</div>}
                     </td>
-                    <td>{row.scannedAt}</td>
                     <td className="text-end">
                       <button
                         type="button"

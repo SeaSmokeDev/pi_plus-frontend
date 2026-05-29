@@ -28,7 +28,12 @@ export async function getTerminalModelsByBrand(brand: string): Promise<string[]>
 
 export async function getMaxCapacityByModel(model: string): Promise<number | null> {
   const encodedModel = encodeURIComponent(model.trim());
+  console.log("[GET] /api/catalogo/cajas/modelos/{modelo}/max-capacity", {
+    modeloParam: model.trim(),
+    encodedModel,
+  });
   const data = await apiRequest<MaxCapacityByModelResponse>(`/catalogo/cajas/modelos/${encodedModel}/max-capacity`);
+  console.log("[GET] max-capacity response", data);
   const capacity = data.maxCapacity ?? data.capacidadMaxima;
   return typeof capacity === "number" && Number.isFinite(capacity) ? capacity : null;
 }

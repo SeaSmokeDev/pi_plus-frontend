@@ -24,6 +24,15 @@
   background: #e9eef1;
 }
 
+.sn-search-input-group input.form-control::placeholder {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+.sn-search-input-group .material-symbols-outlined {
+  color: #1e3a5f;
+}
+
 .sn-search-main-btn {
   background-color: #005f78;
   border-color: #005f78;

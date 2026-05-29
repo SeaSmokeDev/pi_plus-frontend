@@ -19,6 +19,7 @@ export interface WarehouseMapItem {
     material: MapPaletMaterial;
     tipo: MapPaletType;
     capacidadMaxCajas: number;
+    codigoMarca?: string;
   } | null;
   ocupacionActual: number;
   cajas: Array<{

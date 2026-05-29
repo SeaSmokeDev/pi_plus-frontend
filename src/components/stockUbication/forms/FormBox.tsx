@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import type { FreeBox } from "../../../services/boxService";
+import { getFreeBoxesByBrand, type FreeBox } from "../../../services/boxService";
 import { getMaxCapacityByModel, getTerminalBrands, getTerminalModelsByBrand } from "../../../services/terminalCatalogService";
 import type { WarehouseMapItem } from "../../../types/warehouseMap.types";
 
@@ -17,10 +17,9 @@ export interface NuevaCajaPayload {
 interface FormBoxProps {
   hueco: WarehouseMapItem;
   mode: FormBoxMode;
-  freeBoxes: FreeBox[];
-  isLoadingFreeBoxes: boolean;
+  allowedBrand?: string | null;
   onSubmitNew: (data: NuevaCajaPayload) => Promise<void>;
-  onSubmitExisting: (boxId: number) => Promise<void>;
+  onSubmitExisting: (box: FreeBox) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -54,18 +53,54 @@ function parseBrandAndModel(modeloProducto: string): { marca: string; modelo: st
   };
 }
 
+function normalizeBrandToken(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function extractCodeMiddleToken(code: string): string {
+  const parts = code.split("-").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 2) return parts[1];
+  return code;
+}
+
+function matchesAllowedBrand(allowedBrandOrCode: string, boxBrand: string): boolean {
+  const brandNorm = normalizeBrandToken(boxBrand);
+  const allowedNorm = normalizeBrandToken(allowedBrandOrCode);
+  if (!brandNorm || !allowedNorm) return false;
+  if (brandNorm === allowedNorm) return true;
+
+  const codeToken = normalizeBrandToken(extractCodeMiddleToken(allowedBrandOrCode));
+  if (!codeToken) return false;
+
+  return brandNorm.startsWith(codeToken) || codeToken.startsWith(brandNorm.slice(0, Math.min(3, brandNorm.length)));
+}
+
+function resolveBrandForCatalog(allowedBrandOrCode: string): string {
+  const raw = (allowedBrandOrCode ?? "").trim();
+  if (!raw) return "";
+  if (raw.includes("-")) {
+    return extractCodeMiddleToken(raw);
+  }
+  return raw;
+}
+
 function FormBox({
   hueco,
   mode,
-  freeBoxes,
-  isLoadingFreeBoxes,
+  allowedBrand,
   onSubmitNew,
   onSubmitExisting,
   onCancel,
 }: FormBoxProps) {
+  const effectiveBrand = resolveBrandForCatalog((allowedBrand ?? hueco.pale?.codigoMarca ?? "").trim());
+
   const [form, setForm] = useState<FormState>({
     etiqueta: buildEtiqueta(hueco),
-    marca: "",
+    marca: effectiveBrand,
     modelo: "",
     unidades: 0,
     capacidadTotal: null,
@@ -74,55 +109,52 @@ function FormBox({
   const [selectedExistingBoxId, setSelectedExistingBoxId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+  const [isLoadingCapacity, setIsLoadingCapacity] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [catalogError, setCatalogError] = useState("");
   const [marcas, setMarcas] = useState<string[]>([]);
   const [modelosPorMarca, setModelosPorMarca] = useState<string[]>([]);
+  const [registeredBrand, setRegisteredBrand] = useState("");
+  const [registeredBoxes, setRegisteredBoxes] = useState<FreeBox[]>([]);
+  const [isLoadingRegisteredBoxes, setIsLoadingRegisteredBoxes] = useState(false);
 
   const selectedExistingBox = useMemo(
-    () => freeBoxes.find((box) => box.id === selectedExistingBoxId) ?? null,
-    [freeBoxes, selectedExistingBoxId]
+    () => registeredBoxes.find((box) => box.id === selectedExistingBoxId) ?? null,
+    [registeredBoxes, selectedExistingBoxId]
   );
+
+  const normalizedAllowedBrand = (allowedBrand ?? "").trim().toLowerCase();
+
+  const freeBoxesByAllowedBrand = useMemo(() => {
+    if (!normalizedAllowedBrand) return registeredBoxes;
+    return registeredBoxes.filter((box) => {
+      const parsed = parseBrandAndModel(box.modeloProducto);
+      return matchesAllowedBrand(allowedBrand ?? "", parsed.marca);
+    });
+  }, [allowedBrand, normalizedAllowedBrand, registeredBoxes]);
 
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
       etiqueta: buildEtiqueta(hueco),
+      marca: effectiveBrand || prev.marca,
+      modelo: effectiveBrand ? "" : prev.modelo,
+      capacidadTotal: effectiveBrand ? null : prev.capacidadTotal,
       paletId: hueco.pale?.id ?? null,
     }));
-  }, [hueco]);
+  }, [effectiveBrand, hueco]);
 
   useEffect(() => {
-    if (mode !== "manual") return;
+    setSelectedExistingBoxId(null);
+  }, [mode, normalizedAllowedBrand]);
 
-    let cancelled = false;
-
-    const loadBrands = async () => {
-      try {
-        setIsLoadingCatalog(true);
-        setCatalogError("");
-        const brands = await getTerminalBrands();
-        if (!cancelled) {
-          setMarcas(brands);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          const message = error instanceof Error ? error.message : "No se pudieron cargar las marcas.";
-          setCatalogError(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingCatalog(false);
-        }
-      }
-    };
-
-    void loadBrands();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [mode]);
+  useEffect(() => {
+    if (mode !== "registered") return;
+    setErrorMessage("");
+    setSelectedExistingBoxId(null);
+    setRegisteredBoxes([]);
+    setRegisteredBrand((allowedBrand ?? "").trim());
+  }, [mode, allowedBrand, hueco.idHueco]);
 
   useEffect(() => {
     if (mode !== "manual") return;
@@ -130,7 +162,8 @@ function FormBox({
     let cancelled = false;
 
     const loadModels = async () => {
-      if (!form.marca) {
+      const manualBrand = effectiveBrand;
+      if (!manualBrand) {
         setModelosPorMarca([]);
         return;
       }
@@ -138,7 +171,7 @@ function FormBox({
       try {
         setIsLoadingCatalog(true);
         setCatalogError("");
-        const models = await getTerminalModelsByBrand(form.marca);
+        const models = await getTerminalModelsByBrand(manualBrand);
         if (!cancelled) {
           setModelosPorMarca(models);
         }
@@ -160,7 +193,7 @@ function FormBox({
     return () => {
       cancelled = true;
     };
-  }, [form.marca, mode]);
+  }, [effectiveBrand, mode]);
 
   useEffect(() => {
     if (mode !== "manual") return;
@@ -170,12 +203,20 @@ function FormBox({
     const loadMaxCapacity = async () => {
       if (!form.modelo) {
         setForm((prev) => ({ ...prev, capacidadTotal: null }));
+        setIsLoadingCapacity(false);
         return;
       }
 
       try {
+        setIsLoadingCapacity(true);
         setIsLoadingCatalog(true);
-        const maxCapacity = await getMaxCapacityByModel(form.modelo);
+        const brandForCatalog = resolveBrandForCatalog(allowedBrand ?? "");
+        console.log("[FormBox] max-capacity request params", {
+          brandForCatalog,
+          selectedModel: form.modelo,
+          modeloParamSent: brandForCatalog,
+        });
+        const maxCapacity = brandForCatalog ? await getMaxCapacityByModel(brandForCatalog) : null;
         if (!cancelled) {
           setForm((prev) => ({ ...prev, capacidadTotal: maxCapacity }));
         }
@@ -187,6 +228,7 @@ function FormBox({
         }
       } finally {
         if (!cancelled) {
+          setIsLoadingCapacity(false);
           setIsLoadingCatalog(false);
         }
       }
@@ -199,15 +241,66 @@ function FormBox({
     };
   }, [form.modelo, mode]);
 
-  const handleMarcaChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const marca = event.target.value;
-    setForm((prev) => ({
-      ...prev,
-      marca,
-      modelo: "",
-      capacidadTotal: null,
-    }));
-  };
+  useEffect(() => {
+    if (mode !== "registered") return;
+    if (allowedBrand) return;
+
+    let cancelled = false;
+    const loadBrands = async () => {
+      try {
+        setCatalogError("");
+        const brands = await getTerminalBrands();
+        if (!cancelled) {
+          setMarcas(brands);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "No se pudieron cargar las marcas.";
+          setCatalogError(message);
+        }
+      }
+    };
+    void loadBrands();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, allowedBrand]);
+
+  useEffect(() => {
+    if (mode !== "registered") return;
+
+    const brandToLoad = (allowedBrand ?? registeredBrand).trim();
+    if (!brandToLoad) {
+      setRegisteredBoxes([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadBoxesByBrand = async () => {
+      try {
+        setIsLoadingRegisteredBoxes(true);
+        setCatalogError("");
+        const boxes = await getFreeBoxesByBrand(brandToLoad);
+        if (!cancelled) {
+          setRegisteredBoxes(boxes);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "No se pudieron cargar las cajas libres por marca.";
+          setCatalogError(message);
+          setRegisteredBoxes([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingRegisteredBoxes(false);
+        }
+      }
+    };
+    void loadBoxesByBrand();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, allowedBrand, registeredBrand]);
 
   const handleModeloChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const modelo = event.target.value;
@@ -232,28 +325,39 @@ function FormBox({
 
   const canSubmitManual =
     Boolean(form.etiqueta.trim()) &&
-    Boolean(form.marca.trim()) &&
+    Boolean(effectiveBrand) &&
     Boolean(form.modelo.trim()) &&
     capacidadActual !== null &&
     capacidadActual > 0 &&
     form.unidades >= 0 &&
     !unidadesInvalidas;
 
-  const canSubmitExisting = Boolean(selectedExistingBoxId && form.paletId);
+  const selectedExistingBrand = selectedExistingBox ? parseBrandAndModel(selectedExistingBox.modeloProducto).marca : "";
+  const fixedBrand = (allowedBrand ?? "").trim();
+  const brandMismatch =
+    mode === "registered" &&
+    Boolean(fixedBrand && selectedExistingBrand) &&
+    normalizeBrandToken(selectedExistingBrand) !== normalizeBrandToken(fixedBrand);
+  const canSubmitExisting = Boolean(selectedExistingBoxId && form.paletId && !brandMismatch);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setErrorMessage("");
 
     if (mode === "registered") {
-      if (!canSubmitExisting || !selectedExistingBoxId) {
+      if (!canSubmitExisting || !selectedExistingBoxId || !selectedExistingBox) {
         setErrorMessage("Selecciona una caja existente para asignarla al palé.");
+        return;
+      }
+
+      if (brandMismatch && fixedBrand) {
+        setErrorMessage(`Este palé ya contiene cajas de marca ${fixedBrand}. No se pueden mezclar marcas.`);
         return;
       }
 
       try {
         setIsSaving(true);
-        await onSubmitExisting(selectedExistingBoxId);
+        await onSubmitExisting(selectedExistingBox);
       } catch (error) {
         const message = error instanceof Error ? error.message : "No se pudo asignar la caja.";
         setErrorMessage(message);
@@ -273,10 +377,17 @@ function FormBox({
       await onSubmitNew({
         etiqueta: form.etiqueta.trim(),
         modelo: form.modelo.trim(),
-        marca: form.marca.trim(),
+        marca: effectiveBrand,
         unidades: form.unidades,
         capacidadTotal: capacidadActual,
-        paletId: typeof form.paletId === "number" && Number.isFinite(form.paletId) ? form.paletId : null,
+        paletId: null,
+      });
+      console.log("[FormBox] create new box payload", {
+        etiqueta: form.etiqueta.trim(),
+        marca: effectiveBrand,
+        modelo: form.modelo.trim(),
+        capacidadTotal: capacidadActual,
+        paletId: null,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo guardar la caja.";
@@ -290,6 +401,28 @@ function FormBox({
     <form onSubmit={handleSubmit} className={`stock-box-form ${mode === "registered" ? "stock-box-form--registered" : ""}`.trim()}>
       {mode === "registered" ? (
         <>
+          {!allowedBrand && (
+            <div className="mb-3 stock-box-form__group">
+              <label className="form-label">Marca</label>
+              <select
+                className="form-select"
+                value={registeredBrand}
+                onChange={(event) => {
+                  setRegisteredBrand(event.target.value);
+                  setSelectedExistingBoxId(null);
+                }}
+                disabled={isSaving || Boolean(catalogError && marcas.length === 0)}
+              >
+                <option value="">Selecciona una marca</option>
+                {marcas.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="mb-3 stock-box-form__group">
             <label className="form-label">Caja existente</label>
             <select
@@ -304,18 +437,32 @@ function FormBox({
                 const nextId = Number(raw);
                 setSelectedExistingBoxId(Number.isFinite(nextId) ? nextId : null);
               }}
-              disabled={isLoadingFreeBoxes || freeBoxes.length === 0 || isSaving}
+              disabled={
+                isLoadingRegisteredBoxes ||
+                freeBoxesByAllowedBrand.length === 0 ||
+                isSaving ||
+                (!allowedBrand && !registeredBrand)
+              }
               required
             >
-              <option value="">{isLoadingFreeBoxes ? "Cargando cajas libres..." : "Selecciona una caja libre"}</option>
-              {freeBoxes.map((box) => (
+              <option value="">
+                {!allowedBrand && !registeredBrand
+                  ? "Selecciona una marca primero"
+                  : isLoadingRegisteredBoxes
+                    ? "Cargando cajas libres..."
+                    : "Selecciona una caja libre"}
+              </option>
+              {freeBoxesByAllowedBrand.map((box) => (
                 <option key={box.id} value={box.id}>
                   {box.etiqueta} - {box.modeloProducto} - Cap. {box.maxCapacity}
                 </option>
               ))}
             </select>
-            {!isLoadingFreeBoxes && freeBoxes.length === 0 && (
-              <div className="form-text">No hay cajas libres disponibles para asignar.</div>
+            {!isLoadingRegisteredBoxes && freeBoxesByAllowedBrand.length === 0 && (allowedBrand || registeredBrand) && (
+              <div className="form-text">No hay cajas libres disponibles para la marca seleccionada.</div>
+            )}
+            {allowedBrand && (
+              <div className="form-text">Palé de marca: {allowedBrand}. Solo se mostrarán cajas libres de esta marca.</div>
             )}
           </div>
 
@@ -358,21 +505,15 @@ function FormBox({
           </div>
 
           <div className="mb-3 stock-box-form__group">
-            <label className="form-label">Marca</label>
-            <select className="form-select" value={form.marca} onChange={handleMarcaChange} required disabled={isLoadingCatalog || marcas.length === 0}>
-              <option value="">{isLoadingCatalog ? "Cargando marcas..." : "Selecciona una marca"}</option>
-              {marcas.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mb-3 stock-box-form__group">
             <label className="form-label">Modelo</label>
-            <select className="form-select" value={form.modelo} onChange={handleModeloChange} required disabled={!form.marca || isLoadingCatalog}>
-              <option value="">{form.marca ? "Selecciona un modelo" : "Selecciona una marca primero"}</option>
+            <select
+              className="form-select"
+              value={form.modelo}
+              onChange={handleModeloChange}
+              required
+              disabled={!effectiveBrand || isLoadingCatalog}
+            >
+              <option value="">{effectiveBrand ? "Selecciona un modelo" : "Este palé no tiene marca definida"}</option>
               {modelosPorMarca.map((modelo) => (
                 <option key={modelo} value={modelo}>
                   {modelo}
@@ -408,14 +549,25 @@ function FormBox({
                 }))
               }
               min={1}
-              placeholder={form.modelo ? "Calculando capacidad..." : "Selecciona un modelo"}
+              placeholder={
+                !form.modelo
+                  ? "Selecciona un modelo"
+                  : isLoadingCapacity
+                    ? "Calculando capacidad..."
+                    : "Capacidad no disponible"
+              }
               required
             />
           </div>
         </>
       )}
 
-      {catalogError && mode === "manual" && <div className="alert alert-warning py-2">{catalogError}</div>}
+      {catalogError && <div className="alert alert-warning py-2">{catalogError}</div>}
+      {brandMismatch && fixedBrand && (
+        <div className="alert alert-danger py-2">
+          {`Este palé ya contiene cajas de marca ${fixedBrand}. No se pueden mezclar marcas.`}
+        </div>
+      )}
       {errorMessage && <div className="alert alert-danger py-2">{errorMessage}</div>}
 
       <div className="d-flex gap-2 stock-box-form__actions">
@@ -424,7 +576,7 @@ function FormBox({
           type="submit"
           disabled={
             isSaving ||
-            (mode === "manual" ? !canSubmitManual || Boolean(catalogError) : !canSubmitExisting || isLoadingFreeBoxes)
+            (mode === "manual" ? !canSubmitManual || Boolean(catalogError) : !canSubmitExisting || isLoadingRegisteredBoxes)
           }
         >
           <i className="bi bi-check2-circle" aria-hidden="true" />

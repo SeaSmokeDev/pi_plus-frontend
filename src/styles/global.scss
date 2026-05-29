@@ -1,19 +1,204 @@
 :root {
+  --color-surface: #f8fafc;
+  --color-card: #ffffff;
+  --color-border: #e2e8f0;
   --color-primary: #2563eb;
-  --color-secondary: #22c55e;
-  --color-danger: #ef4444;
+  --color-primary-light: #eff6ff;
+  --color-text-primary: #1e3a5f;
+  --color-text-secondary: #64748b;
 
-  --bg-main: #f8fafc;
-  --bg-card: #ffffff;
+  --color-success-surface: #f0fdf4;
+  --color-success-bg: #dcfce7;
+  --color-success-text: #16a34a;
+  --color-success-text-dark: #15803d;
 
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  --color-warning-surface: #fffbeb;
+  --color-warning-bg: #fef9c3;
+  --color-warning-text: #ca8a04;
+  --color-warning-text-dark: #a16207;
+
+  --color-danger-surface: #fff5f5;
+  --color-danger-bg: #fee2e2;
+  --color-danger-text: #dc2626;
+  --color-danger-text-dark: #b91c1c;
+}
+
+:root[data-theme="dark"] {
+  --color-surface: #111827;
+  --color-card: #1f2937;
+  --color-border: #334155;
+  --color-primary: #2563eb;
+  --color-primary-light: #1e3a5f;
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #cbd5e1;
+
+  --color-success-surface: #0d1f16;
+  --color-success-bg: #123524;
+  --color-success-text: #22c55e;
+  --color-success-text-dark: #16a34a;
+
+  --color-warning-surface: #241a09;
+  --color-warning-bg: #3a2a0d;
+  --color-warning-text: #eab308;
+  --color-warning-text-dark: #ca8a04;
+
+  --color-danger-surface: #2a1111;
+  --color-danger-bg: #3f1616;
+  --color-danger-text: #ef4444;
+  --color-danger-text-dark: #dc2626;
 }
 
 body {
   scroll-behavior: smooth;
   margin: 0;
   font-family: system-ui, sans-serif;
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.card,
+.modal-content,
+.navbar,
+aside,
+header {
+  background-color: var(--color-card);
+  border-color: var(--color-border) !important;
+  box-shadow: none !important;
+}
+
+.table > tbody > tr:hover > * {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Bootstrap utility overrides to ensure theme applies globally */
+.bg-light {
+  background-color: var(--color-surface) !important;
+}
+
+.text-dark {
+  color: var(--color-text-primary) !important;
+}
+
+.text-muted {
+  color: var(--color-text-secondary) !important;
+}
+
+.border,
+.border-top,
+.border-end,
+.border-bottom,
+.border-start {
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bs-body-color: var(--color-text-primary);
+  --bs-body-bg: var(--color-surface);
+  --bs-card-bg: var(--color-card);
+  --bs-card-color: var(--color-text-primary);
+  --bs-border-color: var(--color-border);
+  --bs-heading-color: var(--color-text-primary);
+  --bs-secondary-color: var(--color-text-secondary);
+  --bs-tertiary-bg: color-mix(in srgb, var(--color-card) 90%, var(--color-primary-light) 10%);
+  --bs-modal-bg: var(--color-card);
+  --bs-modal-color: var(--color-text-primary);
+  --bs-table-bg: var(--color-card);
+  --bs-table-color: var(--color-text-primary);
+  --bs-table-border-color: var(--color-border);
+  --bs-form-control-bg: color-mix(in srgb, var(--color-card) 92%, var(--color-primary-light) 8%);
+  --bs-form-control-color: var(--color-text-primary);
+  --bs-form-control-border-color: var(--color-border);
+  --bs-form-select-bg: color-mix(in srgb, var(--color-card) 92%, var(--color-primary-light) 8%);
+  --bs-form-select-color: var(--color-text-primary);
+  --bs-form-select-border-color: var(--color-border);
+  --bs-input-group-addon-bg: color-mix(in srgb, var(--color-card) 85%, var(--color-primary-light) 15%);
+  --bs-input-group-addon-color: var(--color-text-primary);
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .app-layout {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+:root[data-theme="dark"] .btn-outline-secondary {
+  --bs-btn-color: var(--color-text-secondary);
+  --bs-btn-border-color: var(--color-border);
+  --bs-btn-hover-color: var(--color-text-primary);
+  --bs-btn-hover-bg: var(--color-primary-light);
+  --bs-btn-hover-border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .table {
+  --bs-table-color: var(--color-text-primary);
+  --bs-table-bg: var(--color-card);
+  --bs-table-border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .modal-content,
+:root[data-theme="dark"] .modal-header,
+:root[data-theme="dark"] .modal-body,
+:root[data-theme="dark"] .modal-footer,
+:root[data-theme="dark"] .table,
+:root[data-theme="dark"] .form-label,
+:root[data-theme="dark"] .form-text,
+:root[data-theme="dark"] .form-control,
+:root[data-theme="dark"] .form-select,
+:root[data-theme="dark"] .input-group-text,
+:root[data-theme="dark"] .alert-secondary {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme="dark"] .form-control::placeholder,
+:root[data-theme="dark"] .form-select::placeholder {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: var(--color-primary);
+  --bs-btn-border-color: var(--color-primary);
+  --bs-btn-hover-color: var(--color-card);
+  --bs-btn-hover-bg: var(--color-primary);
+  --bs-btn-hover-border-color: var(--color-primary);
+}
+
+:root[data-theme="dark"] .btn-outline-danger {
+  --bs-btn-color: var(--color-danger-text);
+  --bs-btn-border-color: var(--color-danger-text);
+  --bs-btn-hover-color: var(--color-card);
+  --bs-btn-hover-bg: var(--color-danger-text);
+  --bs-btn-hover-border-color: var(--color-danger-text);
+}
+
+:root[data-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .btn-close:hover,
+:root[data-theme="dark"] .btn-close:focus {
+  opacity: 1;
+}
+
+.stock-slot-status {
+  color: #fff;
+}
+
+.stock-slot-status--success {
+  background-color: var(--color-success-text);
+}
+
+.stock-slot-status--warning {
+  background-color: var(--color-warning-text);
+}
+
+.stock-slot-status--danger {
+  background-color: var(--color-danger-text);
+}
+
+.stock-slot-status-accent {
+  background-color: var(--color-warning-bg);
 }
