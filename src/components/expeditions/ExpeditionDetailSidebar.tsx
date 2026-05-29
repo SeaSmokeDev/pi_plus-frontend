@@ -1,9 +1,10 @@
-import type { ExpeditionDraftData } from "../../types";
+import type { ExpeditionDetailFormData } from "../../types";
 
 type ExpeditionDetailSidebarProps = {
   title: string;
-  form: ExpeditionDraftData;
-  onChange: (field: keyof ExpeditionDraftData, value: string) => void;
+  reference?: string | null;
+  form: ExpeditionDetailFormData;
+  onChange: (field: keyof ExpeditionDetailFormData, value: string) => void;
   onCancel: () => void;
   onSave: () => void;
   onConfirm: () => void;
@@ -13,12 +14,17 @@ type ExpeditionDetailSidebarProps = {
 
 export default function ExpeditionDetailSidebar({
   title,
+  reference,
   form,
   onChange,
   onSave,
   onConfirm,
   onCancel,
+  saving = false,
+  confirming = false,
 }: ExpeditionDetailSidebarProps) {
+  const isSubmitting = saving || confirming;
+
   return (
     <section className="card border-0 shadow-sm">
       <div className="card-header bg-white py-3">
@@ -26,12 +32,15 @@ export default function ExpeditionDetailSidebar({
       </div>
 
       <div className="card-body d-flex flex-column gap-4">
-        <h2 className="h6 fw-bold mb-1">Nº Expedicion: 123</h2>
+        <h2 className="h6 fw-bold mb-1">
+          N. Expedicion: {reference || "Pendiente de generar"}
+        </h2>
+
         <div className="row g-3">
           <div className="col-12">
-            <label className="form-label fw-semibold">Usuario Asignado</label>
+            <label className="form-label fw-semibold">Usuario asignado</label>
             <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
-              <div className="text-primary-emphasis">{form.username}</div>
+              <div className="text-primary-emphasis">{form.username || "Sin usuario"}</div>
             </div>
           </div>
 
@@ -45,27 +54,32 @@ export default function ExpeditionDetailSidebar({
           <div className="col-12">
             <label className="form-label fw-semibold">Destino</label>
             <div className="rounded-3 px-3 py-3 border border-info-subtle bg-info-subtle">
-              <div className="text-primary-emphasis">
-                {form.direccionDestino}
-              </div>
+              <div className="text-primary-emphasis">{form.direccionDestino}</div>
             </div>
           </div>
 
           <div className="col-12 col-md-6">
             <label className="form-label fw-semibold">Bultos</label>
             <input
+              type="number"
+              min="0"
               className="form-control"
               value={form.paquetes ?? ""}
               onChange={(event) => onChange("paquetes", event.target.value)}
+              disabled={isSubmitting}
             />
           </div>
 
           <div className="col-12 col-md-6">
             <label className="form-label fw-semibold">Kilos</label>
             <input
+              type="number"
+              min="0"
+              step="0.01"
               className="form-control"
               value={form.peso ?? ""}
               onChange={(event) => onChange("peso", event.target.value)}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -76,22 +90,23 @@ export default function ExpeditionDetailSidebar({
               rows={4}
               value={form.notas ?? ""}
               onChange={(event) => onChange("notas", event.target.value)}
+              disabled={isSubmitting}
             />
           </div>
         </div>
       </div>
 
       <div className="card-footer bg-white d-flex flex-wrap gap-2">
-        <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
+        <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
         </button>
 
-        <button type="button" className="btn btn-outline-primary" onClick={onSave}>
-          Guardar
+        <button type="button" className="btn btn-outline-primary" onClick={onSave} disabled={isSubmitting}>
+          {saving ? "Guardando..." : "Guardar expedicion"}
         </button>
 
-        <button type="button" className="btn btn-primary" onClick={onConfirm}>
-          Confirmar
+        <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={isSubmitting}>
+          {confirming ? "Confirmando..." : "Confirmar expedicion"}
         </button>
       </div>
     </section>

@@ -2,37 +2,38 @@ import { useCallback, useState } from "react";
 import type { ExpeditionBatchEdit } from "../types";
 import { getExpeditionEdit } from "../services/expeditionService";
 
-
 export function useExpeditionDetail() {
-  const [quickView, setQuickView] = useState<ExpeditionBatchEdit | null>(null);
+  const [detail, setDetail] = useState<ExpeditionBatchEdit | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadQuickView = useCallback(async (reference: string) => {
+  const loadDetail = useCallback(async (reference: string): Promise<ExpeditionBatchEdit | null> => {
     try {
       setLoading(true);
       setError(null);
 
       const data = await getExpeditionEdit(reference);
-      setQuickView(data);
+      setDetail(data);
+      return data;
     } catch (error) {
-      setError("No se ha podido cargar la vista rápida de la expedición.");
-      console.error("Error loading expedition quick view:", error);
+      setError("No se ha podido cargar la expedicion para editar.");
+      console.error("Error loading expedition detail:", error);
+      return null;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const clearQuickView = useCallback(() => {
-    setQuickView(null);
+  const clearDetail = useCallback(() => {
+    setDetail(null);
     setError(null);
   }, []);
 
   return {
-    quickView,
+    detail,
     loading,
     error,
-    loadQuickView,
-    clearQuickView,
+    loadDetail,
+    clearDetail,
   };
 }
