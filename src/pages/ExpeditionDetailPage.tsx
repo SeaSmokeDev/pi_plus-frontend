@@ -29,6 +29,30 @@ function toDetailFormFromDraft(draft: ExpeditionDraftData): ExpeditionDetailForm
   };
 }
 
+function getTerminalSns(boxes: BoxExpeditionDetail[]): string[] {
+  return boxes.flatMap((box) => box.terminales.map((terminal) => terminal.numeroSerie));
+}
+
+function findFirstInvalidNewTerminal(
+  boxes: BoxExpeditionDetail[],
+  existingTerminalSns: Set<string>,
+): { numeroSerie: string; estado: string } | null {
+  for (const box of boxes) {
+    for (const terminal of box.terminales) {
+      const isExistingTerminal = existingTerminalSns.has(terminal.numeroSerie);
+
+      if (!isExistingTerminal && terminal.estado !== "operativo") {
+        return {
+          numeroSerie: terminal.numeroSerie,
+          estado: terminal.estado,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 export default function ExpeditionDetailPage() {
   const navigate = useNavigate();
   const { reference } = useParams<{ reference: string }>();
@@ -36,6 +60,7 @@ export default function ExpeditionDetailPage() {
 
   const [form, setForm] = useState<ExpeditionDetailFormData | null>(null);
   const [selectedBoxes, setSelectedBoxes] = useState<BoxExpeditionDetail[]>([]);
+  const [existingTerminalSns, setExistingTerminalSns] = useState<Set<string>>(new Set());
   const [loadingInitialData, setLoadingInitialData] = useState(true);
   const [submitAction, setSubmitAction] = useState<SubmitAction | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -87,6 +112,7 @@ export default function ExpeditionDetailPage() {
           notas: editData.notas,
         });
         setSelectedBoxes(editData.cajas ?? []);
+        setExistingTerminalSns(new Set(getTerminalSns(editData.cajas ?? [])));
         setLoadingInitialData(false);
         return;
       }
@@ -105,6 +131,7 @@ export default function ExpeditionDetailPage() {
 
         setForm(toDetailFormFromDraft(parsedDraft));
         setSelectedBoxes([]);
+        setExistingTerminalSns(new Set());
       } catch (error) {
         console.error("Error parsing expedition draft:", error);
         sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
@@ -172,7 +199,18 @@ export default function ExpeditionDetailPage() {
     }
 
     if (selectedBoxes.length === 0) {
-      setSubmitError("Debes anadir al menos una caja a la expedicion.");
+      setSubmitError("Debes añadir al menos una caja a la expedicion.");
+      return null;
+    }
+
+    const invalidNewTerminal = findFirstInvalidNewTerminal(selectedBoxes, existingTerminalSns);
+
+    if (invalidNewTerminal) {
+      setSubmitError(
+        invalidNewTerminal.estado === "pendiente_transito"
+          ? `El terminal ${invalidNewTerminal.numeroSerie} no se puede añadir porque esta pendiente de transito.`
+          : `Solo se pueden añadir terminales en estado operativo. Revisa el terminal ${invalidNewTerminal.numeroSerie}.`,
+      );
       return null;
     }
 
