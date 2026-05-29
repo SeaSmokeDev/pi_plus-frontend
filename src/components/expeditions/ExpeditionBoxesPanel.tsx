@@ -10,7 +10,9 @@ type ExpeditionBoxesPanelProps = {
 };
 
 function hasNonOperativeTerminals(box: BoxExpeditionDetail) {
-  return box.terminales.some((terminal) => terminal.estado !== "operativo");
+  return box.terminales.some(
+    (terminal) => terminal.estado !== "operativo" && terminal.estado !== "pendiente_transito",
+  );
 }
 
 

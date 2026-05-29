@@ -7,53 +7,9 @@ import {
 } from "../services/expeditionService";
 
 export function useExpeditions() {
-  // const [expeditions, setExpeditions] = useState<Expedition[]>([]);
-  // const [expeditionsList, setExpeditionsList] = useState<ExpeditionList[]>([]);
   const [expeditionsGrouped, setExpeditionsGrouped] = useState<ExpeditionGroupList[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // async function loadAll() {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
-  //     const data = await getExpeditionsToday();
-  //     setExpeditions(data);
-  //   } catch (err) {
-  //     setError("Error al cargar las expediciones");
-  //     console.error("Error fetching expeditions:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
-  // async function loadAllList() {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
-  //     const data = await getExpeditionsListToday();
-  //     setExpeditionsList(data);
-  //   } catch (err) {
-  //     setError("Error al cargar la lista de expediciones");
-  //     console.error("Error fetching expeditions list:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
-  // async function searchList(filters: ExpeditionFilters) {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
-  //     const data = await searchExpeditionsList(filters);
-  //     setExpeditionsList(data);
-  //   } catch (err) {
-  //     setError("Error al buscar expediciones con filtros");
-  //     console.error("Error searching expeditions list:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
 
   async function loadAllGroupToday() {
     try {

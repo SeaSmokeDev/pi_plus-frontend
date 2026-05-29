@@ -10,6 +10,18 @@ type PaymentWithBox = PaymentBoxDetail & {
   boxLabel: string;
 };
 
+function formatPaymentStatus(status: PaymentBoxDetail["estado"]): string {
+  const labels: Record<PaymentBoxDetail["estado"], string> = {
+    en_transito: "En transito",
+    pendiente_transito: "Pendiente transito",
+    pendiente_revision: "Pendiente revision",
+    operativo: "Operativo",
+    pendiente_laboratorio: "Pendiente laboratorio",
+    nivel_1: "Nivel 1",
+  };
+
+  return labels[status] ?? status;
+}
 
 export default function ExpeditionPaymentsPanel({
   boxes,
@@ -66,7 +78,7 @@ export default function ExpeditionPaymentsPanel({
 
                     <td>
                       <span className="badge bg-success-subtle text-success-emphasis rounded-pill px-3 py-2">
-                        Operativo
+                        {formatPaymentStatus(payment.estado)}
                       </span>
                     </td>
 
