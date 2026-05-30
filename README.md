@@ -1,178 +1,130 @@
 # PI-PLUS Frontend
 
-Proyecto frontend del **Proyecto Intermodular – FP DAW**.  
-Aplicación web desarrollada con **React + TypeScript + Vite**, orientada a la **gestión de almacén y control de datáfonos**.
+Aplicación frontend para la gestión de almacén y terminales de pago del proyecto PI-PLUS.
 
-El frontend sigue un flujo claro y predecible de responsabilidades:
-
-**URL → Rutas → Layouts → Páginas → Componentes**
-
-Este enfoque facilita el mantenimiento, la escalabilidad y el trabajo en equipo.
-
----
-
-## 🧭 Flujo de la aplicación
-
-1. **URL**  
-   El usuario accede a una ruta concreta (`/login`, `/dashboard`, `/stock-ubicacion`, etc.).
-
-2. **Routes (`AppRoutes`)**  
-   Se decide qué página cargar y qué layout aplicar.
-
-3. **Layouts**  
-   Definen la estructura visual común (sidebar, header, footer).
-
-4. **Pages**  
-   Representan vistas completas asociadas a una URL.
-
-5. **Components**  
-   Piezas reutilizables que construyen cada página.
-
----
-
-## 📁 Estructura del proyecto
-
-frontend/
-├─ public/
-├─ src/
-│  ├─ assets/
-│  │  └─ react.svg
-│  ├─ components/
-│  │  ├─ dashboard/
-│  │  │  ├─ GridBoard.tsx
-│  │  │  ├─ GridCard.tsx
-│  │  │  └─ RecentActivity.tsx
-│  │  ├─ SNSearch/
-│  │  │  ├─ SNSearchForm.tsx
-│  │  │  ├─ SNSearchHeader.tsx
-│  │  │  └─ SNSearchResult.tsx
-│  │  ├─ stockUbication/
-│  │  │  ├─ forms/
-│  │  │  │  ├─ AddBoxButton.tsx
-│  │  │  │  └─ AddPalletButton.tsx
-│  │  │  ├─ Aisle.tsx
-│  │  │  ├─ Shelf.tsx
-│  │  │  └─ Slot.tsx
-│  │  ├─ Header.tsx
-│  │  ├─ Footer.tsx
-│  │  └─ Sidebar.tsx
-│  ├─ hooks/
-│  ├─ layouts/
-│  │  ├─ AppLayout.tsx
-│  │  └─ AuthLayout.tsx
-│  ├─ mocks/
-│  │  ├─ apiDatafonos.ts
-│  │  ├─ apiDetallesAlmacen.ts
-│  │  └─ apiDetallesPale.ts
-│  ├─ pages/
-│  │  ├─ Dashboard.tsx
-│  │  ├─ Login.tsx
-│  │  ├─ SNSearchPage.tsx
-│  │  └─ StockUbicationPage.tsx
-│  ├─ routes/
-│  │  └─ AppRoutes.tsx
-│  ├─ services/
-│  ├─ styles/
-│  ├─ types/
-│  ├─ App.tsx
-│  ├─ main.tsx
-│  └─ index.css
-├─ index.html
-├─ package.json
-└─ vite.config.ts
-
----
-
-## 📄 Descripción de carpetas y archivos
-
-### `main.tsx`
-Punto de entrada de la aplicación.  
-Inicializa React, React Router y los estilos globales (Bootstrap).
-
----
-
-### `App.tsx`
-Componente raíz de la aplicación.  
-Carga el sistema de rutas principal.
-
----
-
-### `routes/AppRoutes.tsx`
-Define las rutas de la aplicación y decide qué layout y página se renderizan según la URL.
-
----
-
-### `layouts/`
-Define las **capas visuales** de la aplicación.
-
-- `AppLayout.tsx` → Zona privada (sidebar + header + contenido)
-- `AuthLayout.tsx` → Zona pública (login)
-
----
-
-### `pages/`
-Cada archivo representa una **vista completa** asociada a una URL.
-
-- `Dashboard.tsx`
-- `Login.tsx`
-- `SNSearchPage.tsx`
-- `StockUbicationPage.tsx`
-
----
-
-### `components/`
-Componentes reutilizables que construyen las páginas.
-
-#### Dashboard
-Componentes visuales del dashboard principal.
-
-#### SNSearch
-Componentes para la búsqueda de datáfonos por número de serie.
-
-#### StockUbication
-Componentes que representan el mapa del almacén:
-- Pasillos (Aisle)
-- Estanterías (Shelf)
-- Huecos (Slot)
-- Formularios de cajas y palés
-
----
-
-### `mocks/`
-Simulación de respuestas de la API backend durante el desarrollo.
-
----
-
-### `services/`
-Contendrá la lógica de comunicación real con el backend (pendiente).
-
----
-
-### `hooks/`
-Hooks personalizados para encapsular lógica reutilizable (pendiente).
-
----
-
-### `types/`
-Interfaces y tipos TypeScript compartidos (pendiente).
-
----
-
-## 🛠 Tecnologías utilizadas
-
-- React
+## Stack técnico
+- React 19
 - TypeScript
 - Vite
-- React Router DOM
-- Bootstrap
+- React Router
+- Bootstrap + Bootstrap Icons
+- SCSS
 - Google Material Symbols
-- CSS personalizado
 
----
+## Requisitos
+- Node.js 18+ (recomendado 20+)
+- Backend PI-PLUS levantado y accesible
 
-## 👩‍💻 Autores
+## Setup
+Para preparar el entorno y levantar el proyecto, consulta:
 
-- **Ian Tauzy**
-- **Alba Panato Alegre**
+- [Setup Frontend.md](./Setup Frontend.md)
 
-Proyecto desarrollado como parte del **Proyecto Intermodular del FP Superior en Desarrollo de Aplicaciones Web (DAW) - IES Doctor Balmis**.
+## Autenticación
+- Autenticación por sesión de backend con cookie (`credentials: "include"`).
+- No se usa JWT en frontend.
+- Frontend guarda solo información de usuario para UX en cookie `pi_plus_auth_user`.
+- Protección de rutas privadas mediante `RequireAuth`.
+
+## Estructura principal
+```text
+src/
+  auth/               # Sesión, usuario autenticado, helpers de URL API
+  components/         # Componentes UI por dominio
+  hooks/              # Hooks de datos y lógica de vistas
+  layouts/            # AppLayout (privado) y AuthLayout (login)
+  pages/              # Páginas principales
+  routes/             # Enrutado y protección de rutas
+  services/           # Capa de acceso a API
+  styles/             # SCSS global y por página/componente
+  types/              # Tipos TS compartidos
+```
+
+## Rutas principales
+- `/login`
+- `/dashboard`
+- `/search`
+- `/stock`
+- `/stock/ubicacion/:ubicacionId`
+- `/stock/boxes/:boxId/terminals`
+- `/terminal-form`
+- `/expeditions`
+- `/expeditions/new`
+- `/expeditions/:reference/edit`
+
+## Módulos funcionales
+
+### 1) Login y sesión
+- Inicio de sesión, validación de sesión activa y cierre de sesión.
+- Normalización de errores de login para no exponer excepciones técnicas.
+
+### 2) Dashboard de analíticas
+- KPIs (terminales, cajas, palets, ubicaciones, expediciones del día).
+- Gráficas de ocupación de almacén, modelos más usados y alertas operativas.
+- Widgets con carga paralela y manejo de errores por bloque.
+
+### 3) Búsqueda por serie (SN)
+- Consulta de terminal por número de serie.
+- Vista de detalle con estados operativos y acciones de edición/eliminación.
+
+### 4) Mapa de almacén
+- Visualización de pasillos/estanterías/huecos con ocupación.
+- Modal de detalle de ubicación.
+- Gestión de palets (alta, asignación, mover, desasignar, borrar según reglas).
+- Gestión de cajas (alta, asignación a palet, desasignación).
+- Acceso al flujo de terminales por caja.
+
+### 5) Caja y terminales
+- Alta y asignación de terminales a caja.
+- Validación previa por SN.
+- Asociación batch final.
+- Desasignación de terminales y refresco de capacidad.
+
+### 6) Expediciones
+- Listado, filtros, creación y edición de expediciones.
+- Paneles de detalle, pagos y cajas asociadas.
+
+## Organización de carpetas (resumen)
+
+- `src/pages/`: vistas por ruta (`Login`, `Dashboard`, `StockUbicationPage`, `BoxTerminalsPage`, `SNSearchPage`, `Expeditions...`)
+- `src/components/`: componentes reutilizables por dominio (`dashboard`, `stockUbication`, `SNSearch`, `expeditions`)
+- `src/services/`: integración API por contexto (`boxService`, `palletService`, `warehouseMapService`, `cajaTerminalService`, etc.)
+- `src/styles/`: SCSS global y por módulo
+- `src/types/`: contratos TypeScript compartidos
+- `src/layouts/` y `src/routes/`: estructura de navegación y protección de rutas
+
+## Capa de servicios (API)
+Servicio base:
+- `src/services/apiClient.ts` (`apiRequest`, `ApiHttpError`)
+
+Servicios por dominio:
+- `dashboardService.ts`
+- `warehouseMapService.ts`
+- `palletService.ts`
+- `boxService.ts`
+- `cajaTerminalService.ts`
+- `terminalCatalogService.ts`
+- `expeditionService.ts`
+- `userService.ts`
+
+## Estado actual de estilos
+- Proyecto migrado a SCSS.
+- Sistema de variables en `src/styles/global.scss`.
+- Soporte de modo claro/oscuro con override por tema.
+- Layout con header/sidebar sticky y menú lateral colapsable.
+
+## Datos mock
+Actualmente el flujo de la aplicación trabaja contra endpoints reales de backend.
+
+El proyecto mantiene el concepto de "datos de catálogo funcionales" para negocio, por ejemplo:
+- Tipos de palé (`americano`, `europeo`)
+- Materiales de palé (`madera`, `plastico`)
+
+Estos datos deben venir del backend o de catálogo controlado del dominio; no se usan mocks activos en frontend para la operativa principal.
+
+
+## Autores
+- Ian Tauzy
+- Alba Panato Alegre
+
+Proyecto Intermodular - FP DAW, IES Doctor Balmis.
