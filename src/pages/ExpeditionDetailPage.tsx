@@ -1,70 +1,164 @@
 import { useEffect, useState } from "react";
-import { useNavigate} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type {
   BoxExpeditionDetail,
+  ExpeditionBatchRequest,
+  ExpeditionDetailFormData,
   ExpeditionDraftData,
-  CreateExpeditionBatchRequest,
 } from "../types";
+import { useExpeditionDetail } from "../hooks/useExpeditionDetail";
+import { useExpeditionMutationsConfirm } from "../hooks/useExpeditionMutations";
 import { useUserId } from "../hooks/useUserId";
-import { useExpeditionMutations } from "../hooks/useExpeditionMutations";
 
-import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 import ExpeditionBoxesPanel from "../components/expeditions/ExpeditionBoxesPanel";
+import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 import ExpeditionPaymentsPanel from "../components/expeditions/ExpeditionPaymentsPanel";
+import "../styles/ExpeditionsPage.scss";
 
 const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
-export default function ExpeditionDetailPage() {
-  const navigate = useNavigate();
-  // const { reference } = useParams();
+type SubmitAction = "save" | "confirm";
 
-  // const isEditMode = Boolean(reference);
+function toDetailFormFromDraft(draft: ExpeditionDraftData): ExpeditionDetailFormData {
+  return {
+    username: draft.username,
+    direccionDestino: draft.direccionDestino,
+    paquetes: draft.paquetes ?? null,
+    peso: draft.peso ?? null,
+    notas: draft.notas ?? null,
+    fechaEnvio: draft.fechaEnvio ?? null,
+  };
+}
 
-  const [draft, setDraft] = useState<ExpeditionDraftData | null>(null);
-  const [loadingDraft, setLoadingDraft] = useState(true);
-  const [selectedBoxes, setSelectedBoxes] = useState<BoxExpeditionDetail[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+function getTerminalSns(boxes: BoxExpeditionDetail[]): string[] {
+  return boxes.flatMap((box) => box.terminales.map((terminal) => terminal.numeroSerie));
+}
 
-  const { user, loading: loadingUser, loadUserId } = useUserId(draft?.username);
+function findFirstInvalidNewTerminal(
+  boxes: BoxExpeditionDetail[],
+  existingTerminalSns: Set<string>,
+): { numeroSerie: string; estado: string } | null {
+  for (const box of boxes) {
+    for (const terminal of box.terminales) {
+      const isExistingTerminal = existingTerminalSns.has(terminal.numeroSerie);
 
-  const { createBatch } = useExpeditionMutations();
-
-  useEffect(() => {
-    // if (isEditMode) {
-    //   setLoadingDraft(false);
-    //   return;
-    // }
-
-    const savedDraft = sessionStorage.getItem(PENDING_EXPEDITION_STORAGE_KEY);
-
-    if (!savedDraft) {
-      navigate("/expeditions");
-      return;
+      if (!isExistingTerminal && terminal.estado !== "operativo") {
+        return {
+          numeroSerie: terminal.numeroSerie,
+          estado: terminal.estado,
+        };
+      }
     }
-
-    try {
-      const parsedDraft = JSON.parse(savedDraft) as ExpeditionDraftData;
-      setDraft(parsedDraft);
-    } catch (error) {
-      console.error("Error parsing expedition draft:", error);
-      sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
-      navigate("/expeditions");
-      return;
-    } finally {
-      setLoadingDraft(false);
-    }
-  }, [navigate]);
-
-  if (loadingDraft) {
-    return <div className="container p-4">Cargando expedición...</div>;
   }
 
-  function handleDraftChange(field: keyof ExpeditionDraftData, value: string) {
-    setDraft((prev) => {
+  return null;
+}
+
+export default function ExpeditionDetailPage() {
+  const navigate = useNavigate();
+  const { reference } = useParams<{ reference: string }>();
+  const isEditMode = Boolean(reference);
+
+  const [form, setForm] = useState<ExpeditionDetailFormData | null>(null);
+  const [selectedBoxes, setSelectedBoxes] = useState<BoxExpeditionDetail[]>([]);
+  const [existingTerminalSns, setExistingTerminalSns] = useState<Set<string>>(new Set());
+  const [loadingInitialData, setLoadingInitialData] = useState(true);
+  const [submitAction, setSubmitAction] = useState<SubmitAction | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const {
+    loading: loadingDetail,
+    error: detailError,
+    loadDetail,
+    clearDetail,
+  } = useExpeditionDetail();
+  const { user, loading: loadingUser, loadUserId } = useUserId(form?.username);
+  const {
+    createBatch,
+    saveBatch,
+    confirmOpenBatch,
+    saveOpenBatch,
+    loading: mutationLoading,
+    error: mutationError,
+  } = useExpeditionMutationsConfirm();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPageData() {
+      setLoadingInitialData(true);
+      setSubmitError(null);
+
+      if (isEditMode) {
+        if (!reference) {
+          navigate("/expeditions");
+          return;
+        }
+
+        const editData = await loadDetail(reference);
+
+        if (!isMounted) return;
+
+        if (!editData) {
+          setLoadingInitialData(false);
+          return;
+        }
+
+        setForm({
+          username: editData.username,
+          usuarioId: editData.usuarioId,
+          direccionDestino: editData.direccionDestino,
+          paquetes: editData.paquetes,
+          peso: editData.peso,
+          notas: editData.notas,
+        });
+        setSelectedBoxes(editData.cajas ?? []);
+        setExistingTerminalSns(new Set(getTerminalSns(editData.cajas ?? [])));
+        setLoadingInitialData(false);
+        return;
+      }
+
+      const savedDraft = sessionStorage.getItem(PENDING_EXPEDITION_STORAGE_KEY);
+
+      if (!savedDraft) {
+        navigate("/expeditions");
+        return;
+      }
+
+      try {
+        const parsedDraft = JSON.parse(savedDraft) as ExpeditionDraftData;
+
+        if (!isMounted) return;
+
+        setForm(toDetailFormFromDraft(parsedDraft));
+        setSelectedBoxes([]);
+        setExistingTerminalSns(new Set());
+      } catch (error) {
+        console.error("Error parsing expedition draft:", error);
+        sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
+        navigate("/expeditions");
+        return;
+      } finally {
+        if (isMounted) {
+          setLoadingInitialData(false);
+        }
+      }
+    }
+
+    void loadPageData();
+
+    return () => {
+      isMounted = false;
+      clearDetail();
+    };
+  }, [clearDetail, isEditMode, loadDetail, navigate, reference]);
+
+  function handleFormChange(field: keyof ExpeditionDetailFormData, value: string) {
+    setForm((prev) => {
       if (!prev) return prev;
 
-      const updatedDraft = {
+      const updatedForm: ExpeditionDetailFormData = {
         ...prev,
         [field]:
           field === "paquetes" || field === "peso"
@@ -74,91 +168,120 @@ export default function ExpeditionDetailPage() {
             : value,
       };
 
-      sessionStorage.setItem(
-        PENDING_EXPEDITION_STORAGE_KEY,
-        JSON.stringify(updatedDraft),
-      );
+      if (!isEditMode) {
+        sessionStorage.setItem(
+          PENDING_EXPEDITION_STORAGE_KEY,
+          JSON.stringify({
+            username: updatedForm.username || "",
+            direccionDestino: updatedForm.direccionDestino,
+            paquetes: updatedForm.paquetes ?? null,
+            peso: updatedForm.peso ?? null,
+            notas: updatedForm.notas ?? null,
+            fechaEnvio: updatedForm.fechaEnvio ?? null,
+          } satisfies ExpeditionDraftData),
+        );
+      }
 
-      return updatedDraft;
+      return updatedForm;
     });
   }
 
   function handleCancel() {
-    sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
+    if (!isEditMode) {
+      sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
+    }
+
     navigate("/expeditions");
   }
 
-  async function handleSubmit() {
-    if (!draft) return;
-    console.log("Submitting expedition with data:", draft, "and selected boxes:", selectedBoxes);
-
+  async function buildRequest(): Promise<ExpeditionBatchRequest | null> {
+    if (!form) {
+      setSubmitError("No hay datos de expedicion para guardar.");
+      return null;
+    }
 
     if (selectedBoxes.length === 0) {
-      setSubmitError("Debes añadir al menos una caja a la expedición.");
-      return;
+      setSubmitError("Debes añadir al menos una caja a la expedicion.");
+      return null;
     }
 
-    const resolvedUser = user ?? await loadUserId(draft.username);
+    const invalidNewTerminal = findFirstInvalidNewTerminal(selectedBoxes, existingTerminalSns);
 
-    if (!resolvedUser) {
+    if (invalidNewTerminal) {
+      setSubmitError(
+        invalidNewTerminal.estado === "pendiente_transito"
+          ? `El terminal ${invalidNewTerminal.numeroSerie} no se puede añadir porque esta pendiente de transito.`
+          : `Solo se pueden añadir terminales en estado operativo. Revisa el terminal ${invalidNewTerminal.numeroSerie}.`,
+      );
+      return null;
+    }
+
+    let usuarioId = form.usuarioId ?? user?.id ?? null;
+
+    if (!usuarioId && form.username) {
+      const resolvedUser = await loadUserId(form.username);
+      usuarioId = resolvedUser?.id ?? null;
+    }
+
+    if (!usuarioId) {
       setSubmitError("No se ha podido obtener el usuario asignado.");
-      return;
+      return null;
     }
 
-    const request: CreateExpeditionBatchRequest = {
-      direccionDestino: draft.direccionDestino,
-      paquetes: draft.paquetes ?? 0,
-      peso: draft.peso ?? 0,
-      notas: draft.notas ?? null,
-      fechaEnvio: draft.fechaEnvio ?? null,
-      usuarioId: resolvedUser.id,
+    return {
+      direccionDestino: form.direccionDestino,
+      paquetes: form.paquetes ?? null,
+      peso: form.peso ?? null,
+      notas: form.notas ?? null,
+      usuarioId,
       cajaIds: selectedBoxes.map((box) => box.id),
     };
-
-    const result = await createBatch(request);
-
-    if (!result) return;
-
-    sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
-    navigate("/expeditions");
   }
 
-  if (loadingDraft) {
-    return <div className="container p-4">Cargando expedición...</div>;
+  async function submitExpedition(action: SubmitAction) {
+    setSubmitError(null);
+    setSubmitAction(action);
+
+    try {
+      const request = await buildRequest();
+
+      if (!request) return;
+
+      const result =
+        isEditMode && reference
+          ? action === "confirm"
+            ? await confirmOpenBatch(reference, request)
+            : await saveOpenBatch(reference, request)
+          : action === "confirm"
+            ? await createBatch(request)
+            : await saveBatch(request);
+
+      if (!result) return;
+
+      sessionStorage.removeItem(PENDING_EXPEDITION_STORAGE_KEY);
+      navigate("/expeditions");
+    } finally {
+      setSubmitAction(null);
+    }
   }
 
-  // if (isEditMode) {
-  //   return (
-  //     <div className="container-fluid p-4">
-  //       <section className="card border-0 shadow-sm">
-  //         <div className="card-body">
-  //           <h1 className="h4 fw-bold mb-2">Datos de la expedición</h1>
-  //           <p className="text-muted mb-3">
-  //             La edición por referencia se implementará cuando el backend
-  //             devuelva el lote completo.
-  //           </p>
+  function handleRequestConfirmExpedition() {
+    setSubmitError(null);
+    setIsConfirmModalOpen(true);
+  }
 
-  //           <button
-  //             type="button"
-  //             className="btn btn-outline-secondary"
-  //             onClick={() => navigate("/expeditions")}
-  //           >
-  //             Volver al listado
-  //           </button>
-  //         </div>
-  //       </section>
-  //     </div>
-  //   );
-  // }
+  function handleCloseConfirmModal() {
+    if (submitAction) return;
+    setIsConfirmModalOpen(false);
+  }
 
-  if (!draft) {
-    return <div className="container p-4">No hay datos de expedición.</div>;
+  async function handleAcceptConfirmExpedition() {
+    setIsConfirmModalOpen(false);
+    await submitExpedition("confirm");
   }
 
   function handleAddBox(box: BoxExpeditionDetail) {
-    const alreadyExists = selectedBoxes.some(
-      (selectedBox) => selectedBox.id === box.id,
-    );
+    const alreadyExists = selectedBoxes.some((selectedBox) => selectedBox.id === box.id);
     if (alreadyExists) return;
 
     setSelectedBoxes((prev) => [...prev, box]);
@@ -168,26 +291,46 @@ export default function ExpeditionDetailPage() {
     setSelectedBoxes((prev) => prev.filter((box) => box.id !== boxId));
   }
 
+  if (loadingInitialData || loadingDetail) {
+    return <div className="container p-4 expeditions-page">Cargando expedicion...</div>;
+  }
+
+  if (detailError) {
+    return <div className="container p-4 text-danger expeditions-page">Error: {detailError}</div>;
+  }
+
+  if (!form) {
+    return <div className="container p-4 expeditions-page">No hay datos de expedicion.</div>;
+  }
+
+  const actionError = submitError || mutationError;
+  const isSaving = submitAction === "save" && (mutationLoading || loadingUser || Boolean(submitAction));
+  const isConfirming = submitAction === "confirm" && (mutationLoading || loadingUser || Boolean(submitAction));
+
   return (
-    <div className="container-fluid p-4 d-flex flex-column gap-4">
+    <div className="container-fluid p-4 d-flex flex-column gap-4 expeditions-page expeditions-page--detail">
+      {actionError && (
+        <div className="alert alert-danger mb-0" role="alert">
+          {actionError}
+        </div>
+      )}
+
       <div className="d-flex flex-column flex-xl-row gap-4 align-items-start">
         <div style={{ width: "100%", maxWidth: "420px" }}>
-          {draft && (
-            <ExpeditionDetailSidebar
-              title="Crear expedición"
-              submitLabel={saving || loadingUser ? "Guardando..." : "Guardar expedición"}
-              form={draft}
-              onChange={handleDraftChange}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-            />
-          )}
+          <ExpeditionDetailSidebar
+            title={isEditMode ? "Editar expedicion" : "Crear expedicion"}
+            reference={reference ?? null}
+            form={form}
+            onChange={handleFormChange}
+            onSave={() => void submitExpedition("save")}
+            onConfirm={handleRequestConfirmExpedition}
+            onCancel={handleCancel}
+            saving={isSaving}
+            confirming={isConfirming}
+          />
         </div>
 
-        <div
-          className="flex-grow-1 d-flex flex-column gap-4"
-          style={{ minWidth: 0 }}
-        >
+        <div className="flex-grow-1 d-flex flex-column gap-4" style={{ minWidth: 0 }}>
           <ExpeditionBoxesPanel
             boxes={selectedBoxes}
             onAddBox={handleAddBox}
@@ -196,6 +339,51 @@ export default function ExpeditionDetailPage() {
           <ExpeditionPaymentsPanel boxes={selectedBoxes} />
         </div>
       </div>
+
+      {isConfirmModalOpen && (
+        <>
+          <div className="modal-backdrop fade show" />
+          <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow">
+                <div className="modal-header">
+                  <h2 className="modal-title h5 mb-0">Confirmar expedicion</h2>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Cerrar"
+                    onClick={handleCloseConfirmModal}
+                    disabled={Boolean(submitAction)}
+                  />
+                </div>
+
+                <div className="modal-body">
+                  <p className="mb-0">Estas seguro de enviar esta expedicion?</p>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleCloseConfirmModal}
+                    disabled={Boolean(submitAction)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => void handleAcceptConfirmExpedition()}
+                    disabled={Boolean(submitAction)}
+                  >
+                    {isConfirming ? "Enviando..." : "Si, enviar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

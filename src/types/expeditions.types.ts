@@ -1,3 +1,4 @@
+import type { BoxExpeditionDetail } from "./box.types";
 import type { ApiDate, ID } from "./common.types";
 
 export type ExpeditionStatus = "abierta" | "en_transito" | "recibida";
@@ -33,7 +34,6 @@ export interface ExpeditionGroupList {
   referenciaExpedicion: string;
   fechaCreacion: ApiDate;
   fechaRecepcion: ApiDate | null;
-  fechaModificacion: ApiDate | null;
   fechaEnvio: ApiDate | null;
   direccionDestino: string;
   username: string;
@@ -74,13 +74,12 @@ export interface ExpeditionDetailFormData {
   estado?: ExpeditionStatus;
 }
 
-export interface CreateExpeditionBatchRequest {
+export interface ExpeditionBatchRequest {
   direccionDestino: string;
   paquetes?: number | null;
   peso?: number | null;
   notas?: string | null;
   usuarioId: ID;
-  fechaEnvio?: ApiDate | null;
   cajaIds: ID[];
 }
 
@@ -95,4 +94,15 @@ export interface ExpeditionQuickView {
   totalExpediciones: number;
   totalTerminales: number;
   terminales: ExpeditionQuickViewPayment[];
+}
+
+export interface ExpeditionBatchEdit{
+  referenciaExpedicion: string;
+  direccionDestino: string;
+  paquetes: number | null;
+  peso: number | null;
+  notas: string | null;
+  usuarioId: ID;
+  username: string;
+  cajas: BoxExpeditionDetail[];
 }

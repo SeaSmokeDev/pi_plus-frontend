@@ -3,6 +3,7 @@ import type { Box } from "./box.types";
 
 export type TerminalStatus =
   | "en_transito"
+  | "pendiente_transito"
   | "pendiente_revision"
   | "operativo"
   | "pendiente_laboratorio"
