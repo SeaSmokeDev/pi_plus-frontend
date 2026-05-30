@@ -27,7 +27,6 @@ type FormState = {
   etiqueta: string;
   marca: string;
   modelo: string;
-  unidades: number;
   capacidadTotal: number | null;
   paletId: number | null;
 };
@@ -102,7 +101,6 @@ function FormBox({
     etiqueta: buildEtiqueta(hueco),
     marca: effectiveBrand,
     modelo: "",
-    unidades: 0,
     capacidadTotal: null,
     paletId: hueco.pale?.id ?? null,
   });
@@ -310,27 +308,14 @@ function FormBox({
     }));
   };
 
-  const handleUnidadesChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const rawValue = event.target.value;
-    const normalized = rawValue.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
-    const value = Number(normalized);
-    setForm((prev) => ({
-      ...prev,
-      unidades: normalized === "" ? 0 : Number.isFinite(value) ? value : 0,
-    }));
-  };
-
   const capacidadActual = form.capacidadTotal;
-  const unidadesInvalidas = mode === "manual" && capacidadActual !== null && form.unidades > capacidadActual;
 
   const canSubmitManual =
     Boolean(form.etiqueta.trim()) &&
     Boolean(effectiveBrand) &&
     Boolean(form.modelo.trim()) &&
     capacidadActual !== null &&
-    capacidadActual > 0 &&
-    form.unidades >= 0 &&
-    !unidadesInvalidas;
+    capacidadActual > 0;
 
   const selectedExistingBrand = selectedExistingBox ? parseBrandAndModel(selectedExistingBox.modeloProducto).marca : "";
   const fixedBrand = (allowedBrand ?? "").trim();
@@ -378,7 +363,7 @@ function FormBox({
         etiqueta: form.etiqueta.trim(),
         modelo: form.modelo.trim(),
         marca: effectiveBrand,
-        unidades: form.unidades,
+        unidades: 0,
         capacidadTotal: capacidadActual,
         paletId: null,
       });
@@ -520,20 +505,6 @@ function FormBox({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="mb-3 stock-box-form__group">
-            <label className="form-label">Unidades</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              className={`form-control ${unidadesInvalidas ? "is-invalid" : ""}`}
-              value={String(form.unidades)}
-              onChange={handleUnidadesChange}
-              aria-label="Unidades"
-            />
-            {unidadesInvalidas && <div className="invalid-feedback">No puede superar la capacidad máxima ({capacidadActual})</div>}
           </div>
 
           <div className="mb-3 stock-box-form__group">
