@@ -1,4 +1,5 @@
 import { apiRequest } from "./apiClient";
+import type { TerminalBrandModel, TerminalBrandModelsResponse } from "../types";
 
 type MarcasCatalogoResponse = {
   items: string[];
@@ -24,6 +25,11 @@ export async function getTerminalModelsByBrand(brand: string): Promise<string[]>
   const encodedBrand = encodeURIComponent(brand.trim());
   const data = await apiRequest<ModelosPorMarcaResponse>(`/catalogo/terminales/marcas/${encodedBrand}/modelos`);
   return data.items ?? [];
+}
+
+export async function getTerminalBrandModels(): Promise<TerminalBrandModel[]> {
+  const data = await apiRequest<TerminalBrandModelsResponse>("/terminales/marcas-modelos");
+  return data.marcasModelos ?? [];
 }
 
 export async function getMaxCapacityByModel(model: string): Promise<number | null> {

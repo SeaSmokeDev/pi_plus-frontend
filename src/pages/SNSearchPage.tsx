@@ -5,6 +5,7 @@ import SNSearchDeleteConfirmModal from "../components/SNSearch/SNSearchDeleteCon
 import SNSearchSearchCard from "../components/SNSearch/SNSearchSearchCard";
 import SNSearchTerminalDetails from "../components/SNSearch/SNSearchTerminalDetails";
 import { useSNSearch } from "../hooks/useSNSearch";
+import { isTerminalLockedForManualActions } from "../types";
 
 export default function SNSearchPage() {
   const navigate = useNavigate();
@@ -22,14 +23,17 @@ export default function SNSearchPage() {
     openDeleteModal,
     closeDeleteModal,
     clearFeedback,
-    clearErrorMessage,
     handleDeleteBySn,
   } = useSNSearch();
 
-  const isInTransit = terminal?.estado === "en_transito";
+  const isTerminalLocked = terminal ? isTerminalLockedForManualActions(terminal.estado) : false;
 
   const handleGoToTerminalForm = () => {
     if (!terminal) {
+      return;
+    }
+
+    if (isTerminalLockedForManualActions(terminal.estado)) {
       return;
     }
 
@@ -55,20 +59,6 @@ export default function SNSearchPage() {
     };
   }, [feedback, clearFeedback]);
 
-  useEffect(() => {
-    if (!errorMessage) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      clearErrorMessage();
-    }, 2000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [errorMessage, clearErrorMessage]);
-
   return (
     <div className="container py-4 sn-search-page">
       <SNSearchSearchCard
@@ -80,14 +70,15 @@ export default function SNSearchPage() {
         isSearching={isSearching}
       />
 
+      {errorMessage && (
+        <div className="alert alert-danger py-3 px-4 mb-4" role="alert" aria-live="assertive">
+          {errorMessage}
+        </div>
+      )}
+
       {feedback && (
         <div className="sn-search-feedback-popup" role="status" aria-live="polite">
           <div className="alert alert-success py-2 px-3 mb-0 shadow-sm">{feedback}</div>
-        </div>
-      )}
-      {errorMessage && (
-        <div className="sn-search-feedback-popup" role="alert" aria-live="assertive">
-          <div className="alert alert-danger py-2 px-3 mb-0 shadow-sm">{errorMessage}</div>
         </div>
       )}
 
@@ -97,7 +88,7 @@ export default function SNSearchPage() {
           isDeleting={isDeleting}
           onDelete={openDeleteModal}
           onEdit={handleGoToTerminalForm}
-          isEditDisabled={isInTransit}
+          areActionsDisabled={isTerminalLocked}
         />
       )}
 

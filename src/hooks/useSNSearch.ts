@@ -1,6 +1,10 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { apiUrl } from "../auth/session";
-import type { Terminal, TerminalApiResponse } from "../components/SNSearch/types";
+import {
+  isTerminalLockedForManualActions,
+  type Payment,
+  type PaymentApiResponse,
+} from "../types";
 
 function toInputDateTime(value?: string): string {
   if (!value) {
@@ -10,7 +14,7 @@ function toInputDateTime(value?: string): string {
   return value.length >= 16 ? value.slice(0, 16) : value;
 }
 
-function fromApiTerminal(terminal: Terminal): Terminal {
+function fromApiTerminal(terminal: Payment): Payment {
   return {
     id: terminal.id,
     numeroSerie: terminal.numeroSerie,
@@ -20,12 +24,13 @@ function fromApiTerminal(terminal: Terminal): Terminal {
     notas: terminal.notas || "",
     fechaIngreso: toInputDateTime(terminal.fechaIngreso),
     fechaCreacion: toInputDateTime(terminal.fechaCreacion),
+    cajaId: terminal.cajaId ?? null,
   };
 }
 
 export function useSNSearch() {
   const [searchSN, setSearchSN] = useState("");
-  const [terminal, setTerminal] = useState<Terminal | null>(null);
+  const [terminal, setTerminal] = useState<Payment | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -47,14 +52,19 @@ export function useSNSearch() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(apiUrl(`/terminales/sn/${encodeURIComponent(sn)}`), {
-        method: "GET",
-        credentials: "include",
-      });
+      const response = await fetch(
+        apiUrl(`/terminales/sn/${encodeURIComponent(sn)}`),
+        {
+          method: "GET",
+          credentials: "include",
+        },
+      );
 
       if (response.status === 404) {
         setTerminal(null);
-        setErrorMessage(`No se encontró ningún equipo con el numero de serie: ${sn}.`);
+        setErrorMessage(
+          `No se encontró ningún equipo con el número de serie: ${sn}.`,
+        );
         return;
       }
 
@@ -62,13 +72,17 @@ export function useSNSearch() {
         throw new Error("No se pudo completar la búsqueda.");
       }
 
-      const data = (await response.json()) as Terminal;
+      const data = (await response.json()) as Payment;
       const parsed = fromApiTerminal(data);
 
       setTerminal(parsed);
+      console.log("Intentando abrir modal de eliminación para terminal:", parsed);
       setFeedback(`Equipo ${parsed.numeroSerie} encontrado.`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Error inesperado en la búsqueda.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Error inesperado en la búsqueda.";
       setErrorMessage(message);
     } finally {
       setIsSearching(false);
@@ -84,10 +98,18 @@ export function useSNSearch() {
   };
 
   const openDeleteModal = () => {
-    const sn = terminal?.numeroSerie?.trim();
+    const currentTerminal = terminal;
+    const sn = currentTerminal?.numeroSerie?.trim();
 
-    if (!sn) {
+    if (!currentTerminal || !sn) {
       setErrorMessage("No hay un número de serie válido para eliminar.");
+      return;
+    }
+
+    if (isTerminalLockedForManualActions(currentTerminal.estado)) {
+      setErrorMessage(
+        "No se puede eliminar un terminal en transito o pendiente de transito.",
+      );
       return;
     }
 
@@ -111,10 +133,19 @@ export function useSNSearch() {
   }, []);
 
   const handleDeleteBySn = async () => {
-    const sn = terminal?.numeroSerie?.trim();
+    const currentTerminal = terminal;
+    const sn = currentTerminal?.numeroSerie?.trim();
 
-    if (!sn) {
+    if (!currentTerminal || !sn) {
       setErrorMessage("No hay un número de serie válido para eliminar.");
+      setIsDeleteModalOpen(false);
+      return;
+    }
+
+    if (isTerminalLockedForManualActions(currentTerminal.estado)) {
+      setErrorMessage(
+        "No se puede eliminar un terminal en transito o pendiente de transito.",
+      );
       setIsDeleteModalOpen(false);
       return;
     }
@@ -124,15 +155,22 @@ export function useSNSearch() {
       setErrorMessage("");
       setFeedback("");
 
-      const response = await fetch(apiUrl(`/terminales/sn/${encodeURIComponent(sn)}`), {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const response = await fetch(
+        apiUrl(`/terminales/sn/${encodeURIComponent(sn)}`),
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
 
-      const data = (await response.json().catch(() => null)) as TerminalApiResponse | null;
+      const data = (await response
+        .json()
+        .catch(() => null)) as PaymentApiResponse | null;
 
       if (!response.ok) {
-        throw new Error(data?.message || data?.error || "No se pudo eliminar el equipo.");
+        throw new Error(
+          data?.message || data?.error || "No se pudo eliminar el equipo.",
+        );
       }
 
       setTerminal(null);
@@ -140,7 +178,10 @@ export function useSNSearch() {
       setFeedback(`Equipo ${sn} eliminado correctamente.`);
       setIsDeleteModalOpen(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Error inesperado al eliminar el equipo.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Error inesperado al eliminar el equipo.";
       setErrorMessage(message);
     } finally {
       setIsDeleting(false);
