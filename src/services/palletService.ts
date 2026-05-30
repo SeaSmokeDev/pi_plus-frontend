@@ -48,6 +48,10 @@ export interface MovePalletResponse {
   ubicacionAlmacenId: number | null;
 }
 
+export interface UpdatePalletDescriptionPayload {
+  descripcion: string;
+}
+
 export async function createPallet(payload: CreatePalletPayload): Promise<unknown> {
   return apiRequest<unknown>("/palets", {
     method: "POST",
@@ -90,6 +94,16 @@ export async function getFreePallets(): Promise<FreePalletResponse[]> {
 
 export async function movePalletToUbicacion(paletId: number, payload: MovePalletPayload): Promise<MovePalletResponse> {
   return apiRequest<MovePalletResponse>(`/palets/${paletId}/ubicacion`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updatePalletDescription(
+  paletId: number,
+  payload: UpdatePalletDescriptionPayload
+): Promise<unknown> {
+  return apiRequest<unknown>(`/palets/${paletId}/descripcion`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });

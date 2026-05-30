@@ -1,104 +1,43 @@
 # Setup Frontend – PI-PLUS
 
-Documento técnico con los pasos realizados para la configuración inicial
-del frontend del proyecto **PI-PLUS**.
+Guía para levantar el frontend en local.
 
-Este archivo complementa al README principal y detalla los comandos
-y configuraciones aplicadas durante el desarrollo.
+## Requisitos
+- Node.js 18+ (recomendado 20+)
+- npm 9+
+- Backend PI-PLUS arrancado y accesible
 
-
-## 📦 Instalación inicial del proyecto
-
-Instalar las dependencias base del proyecto:
-
+## 1) Instalar dependencias
 ```bash
 npm install
 ```
 
----
+## 2) Configurar variables de entorno
+Crear archivo `.env` en la raíz del proyecto:
 
-## 🧭 Instalación de React Router
-
-Se utiliza React Router para la gestión de rutas de la aplicación.
-
-```bash
-npm install react-router-dom
+```env
+VITE_API_BASE_URL=http://localhost:8080/bdproyecto/api
 ```
 
----
+Nota: la base URL ya incluye `/api`.
 
-## 🎨 Instalación de Bootstrap
-
-Bootstrap se utiliza como framework de estilos principal del proyecto.
-
-Instalación mediante npm:
-
-```bash
-npm install bootstrap
-```
-
-Importación de Bootstrap en el punto de entrada del proyecto (`main.tsx`):
-
-```ts
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
-```
-
----
-
-## 🎨 Iconos – Google Material Symbols
-
-El proyecto utiliza **Google Material Symbols** como sistema de iconos.
-
-Se cargan desde Google Fonts en el archivo `index.html`.
-
-Uso básico:
-
-```tsx
-<span className="material-symbols-outlined">dashboard</span>
-```
-
-No se utilizan librerías adicionales ni componentes React para los iconos.
-
-### 🎨 Como se utilizan (Google Material Symbols)
-
-Para usar un icono, se debe incluir un `<span>` con la clase:
-
-```tsx
-<span className="material-symbols-outlined">icon_name</span>
-```
-
-Donde `icon_name` es el nombre del icono proporcionado por Google (por ejemplo: `dashboard`, `inventory_2`, `flare`, etc.).
-
-Los iconos se cargan globalmente desde `index.html` mediante Google Fonts.
-
-```html
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-```
-
----
-
-## ▶️ Ejecución del proyecto
-
-Para arrancar el servidor de desarrollo:
-
+## 3) Arrancar en desarrollo
 ```bash
 npm run dev
 ```
 
-La aplicación se ejecuta por defecto en:
+Frontend disponible por defecto en:
 
-```
+```text
 http://localhost:5173
 ```
 
----
+## 4) Build de producción (opcional)
+```bash
+npm run build
+npm run preview
+```
 
+## 5) Estilos (SCSS)
+El proyecto usa SCSS y Vite lo compila automáticamente.  
+No hace falta ejecutar comandos extra para compilar estilos.

@@ -28,6 +28,23 @@
   max-height: calc(100vh - var(--app-header-height) - 2rem);
 }
 
+@media (max-width: 768px) {
+  .stock-overlay-modal {
+    align-items: flex-start;
+    padding-top: calc(var(--app-header-height) + 0.6rem);
+  }
+
+  .stock-overlay-modal .modal-dialog {
+    margin: 0 auto;
+    max-height: calc(100vh - var(--app-header-height) - 1rem);
+    width: min(100%, 100%);
+  }
+
+  .stock-overlay-modal .modal-content {
+    max-height: calc(100vh - var(--app-header-height) - 1rem);
+  }
+}
+
 .stock-nested-modal-backdrop {
   z-index: 2110 !important;
 }
