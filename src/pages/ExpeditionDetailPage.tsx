@@ -13,6 +13,7 @@ import { useUserId } from "../hooks/useUserId";
 import ExpeditionBoxesPanel from "../components/expeditions/ExpeditionBoxesPanel";
 import ExpeditionDetailSidebar from "../components/expeditions/ExpeditionDetailSidebar";
 import ExpeditionPaymentsPanel from "../components/expeditions/ExpeditionPaymentsPanel";
+import "../styles/ExpeditionsPage.scss";
 
 const PENDING_EXPEDITION_STORAGE_KEY = "pending_expedition";
 
@@ -291,15 +292,15 @@ export default function ExpeditionDetailPage() {
   }
 
   if (loadingInitialData || loadingDetail) {
-    return <div className="container p-4">Cargando expedicion...</div>;
+    return <div className="container p-4 expeditions-page">Cargando expedicion...</div>;
   }
 
   if (detailError) {
-    return <div className="container p-4 text-danger">Error: {detailError}</div>;
+    return <div className="container p-4 text-danger expeditions-page">Error: {detailError}</div>;
   }
 
   if (!form) {
-    return <div className="container p-4">No hay datos de expedicion.</div>;
+    return <div className="container p-4 expeditions-page">No hay datos de expedicion.</div>;
   }
 
   const actionError = submitError || mutationError;
@@ -307,7 +308,7 @@ export default function ExpeditionDetailPage() {
   const isConfirming = submitAction === "confirm" && (mutationLoading || loadingUser || Boolean(submitAction));
 
   return (
-    <div className="container-fluid p-4 d-flex flex-column gap-4">
+    <div className="container-fluid p-4 d-flex flex-column gap-4 expeditions-page expeditions-page--detail">
       {actionError && (
         <div className="alert alert-danger mb-0" role="alert">
           {actionError}

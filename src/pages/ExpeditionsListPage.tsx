@@ -140,7 +140,7 @@ export default function ExpeditionsListPage() {
   }
 
   return (
-    <div className="container-fluid p-4 d-flex flex-column gap-4 expeditions-page">
+    <div className="container-fluid p-4 d-flex flex-column gap-4 expeditions-page expeditions-page--list">
       <section className="card border-0 shadow-sm bg-primary text-white">
         <div className="card-body p-4">
           <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
@@ -154,7 +154,7 @@ export default function ExpeditionsListPage() {
               </p>
             </div>
 
-            <div className="bg-white text-dark rounded-3 px-4 py-3 shadow-sm">
+            <div className="expedition-date bg-white text-dark rounded-3 px-4 py-3 shadow-sm">
               <div className="text-muted small mb-1">Hoy</div>
               <div className="fw-semibold text-capitalize">{todayLabel}</div>
             </div>
