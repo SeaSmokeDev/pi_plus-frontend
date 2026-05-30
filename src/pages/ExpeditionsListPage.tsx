@@ -60,7 +60,13 @@ export default function ExpeditionsListPage() {
 
       const createdDate = expedition.fechaCreacion.slice(0, 10);
       const receivedDate = expedition.fechaRecepcion?.slice(0, 10) || "";
+      const shippingDate = expedition.fechaEnvio?.slice(0, 10) || "";
 
+      const matchesReference =
+        !appliedLocalFilters.referenciaExpedicion ||
+        normalizeText(expedition.referenciaExpedicion).includes(
+          normalizeText(appliedLocalFilters.referenciaExpedicion),
+        );
       const matchesCreatedFrom =
         !appliedLocalFilters.fechaCreacionDesde || createdDate >= appliedLocalFilters.fechaCreacionDesde;
       const matchesCreatedTo =
@@ -71,6 +77,8 @@ export default function ExpeditionsListPage() {
       const matchesReceivedTo =
         !appliedLocalFilters.fechaRecepcionHasta ||
         (receivedDate !== "" && receivedDate <= appliedLocalFilters.fechaRecepcionHasta);
+      const matchesShippingDate =
+        !appliedLocalFilters.fechaEnvio || shippingDate === appliedLocalFilters.fechaEnvio;
       const matchesAssignedTo =
         !appliedLocalFilters.username ||
         normalizeText(expedition.username).includes(normalizeText(appliedLocalFilters.username));
@@ -82,10 +90,12 @@ export default function ExpeditionsListPage() {
 
       return (
         matchesSearchValue &&
+        matchesReference &&
         matchesCreatedFrom &&
         matchesCreatedTo &&
         matchesReceivedFrom &&
         matchesReceivedTo &&
+        matchesShippingDate &&
         matchesAssignedTo &&
         matchesDestination &&
         matchesStatus
