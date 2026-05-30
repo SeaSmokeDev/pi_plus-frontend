@@ -5,6 +5,7 @@ import SNSearchDeleteConfirmModal from "../components/SNSearch/SNSearchDeleteCon
 import SNSearchSearchCard from "../components/SNSearch/SNSearchSearchCard";
 import SNSearchTerminalDetails from "../components/SNSearch/SNSearchTerminalDetails";
 import { useSNSearch } from "../hooks/useSNSearch";
+import { isTerminalLockedForManualActions } from "../types";
 
 export default function SNSearchPage() {
   const navigate = useNavigate();
@@ -26,10 +27,14 @@ export default function SNSearchPage() {
     handleDeleteBySn,
   } = useSNSearch();
 
-  const isInTransit = terminal?.estado === "en_transito";
+  const isTerminalLocked = terminal ? isTerminalLockedForManualActions(terminal.estado) : false;
 
   const handleGoToTerminalForm = () => {
     if (!terminal) {
+      return;
+    }
+
+    if (isTerminalLockedForManualActions(terminal.estado)) {
       return;
     }
 
@@ -97,7 +102,7 @@ export default function SNSearchPage() {
           isDeleting={isDeleting}
           onDelete={openDeleteModal}
           onEdit={handleGoToTerminalForm}
-          isEditDisabled={isInTransit}
+          areActionsDisabled={isTerminalLocked}
         />
       )}
 
