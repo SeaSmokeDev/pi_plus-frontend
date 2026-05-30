@@ -44,6 +44,7 @@ function TerminalEditableForm({ isCreateMode, form, onChange }: TerminalEditable
             rows={4}
             placeholder="Añade notas sobre el estado del equipo, incidencias, accesorios, etc."
             value={form.notas}
+            maxLength={250}
             onChange={(event) => onChange("notas", event.target.value)}
           />
         </div>
