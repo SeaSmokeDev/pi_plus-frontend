@@ -1,0 +1,38 @@
+.dashboard-page {
+  margin: 0 auto;
+  max-width: 1600px;
+  width: 100%;
+
+  > .d-flex > .h4 {
+    font-size: clamp(1.35rem, 1.1rem + 1vw, 2rem);
+  }
+
+  .card .card-body h3 {
+    font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.35rem);
+  }
+
+  .card .card-body .card-text {
+    font-size: clamp(0.95rem, 0.85rem + 0.35vw, 1.15rem);
+  }
+
+  .dashboard-warehouse-occupation__title,
+  .dashboard-models-usage__title,
+  .dashboard-operational-alerts__title,
+  .dashboard-recent-activity__title {
+    font-size: clamp(1.5rem, 1.15rem + 1.1vw, 2.05rem);
+  }
+
+  .dashboard-warehouse-occupation__subtitle,
+  .dashboard-models-usage__subtitle,
+  .dashboard-operational-alerts__subtitle,
+  .dashboard-recent-activity__subtitle {
+    font-size: clamp(0.95rem, 0.85rem + 0.45vw, 1.2rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}

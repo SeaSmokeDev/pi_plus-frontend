@@ -14,6 +14,21 @@ type LoginResponse = {
   roles?: string;
 };
 
+const normalizeLoginErrorMessage = (rawMessage: string): string => {
+  const message = rawMessage.trim();
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("badcredentialsexception") ||
+    lower.includes("bad credentials") ||
+    lower.includes("error en usuario o contraseña")
+  ) {
+    return "Usuario o contraseña incorrectos.";
+  }
+
+  return message || "No se pudo iniciar sesión.";
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,7 +107,7 @@ export default function Login() {
       navigate("/dashboard", { replace: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error inesperado al iniciar sesión.";
-      setErrorMessage(message);
+      setErrorMessage(normalizeLoginErrorMessage(message));
     } finally {
       setIsLoading(false);
     }

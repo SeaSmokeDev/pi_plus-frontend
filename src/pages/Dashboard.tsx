@@ -17,6 +17,7 @@ import {
   getUbicacionesCount,
   getUbicacionesMapa,
 } from "../services/dashboardService";
+import "../styles/DashboardPage.scss";
 
 type WidgetState<T> = {
   loading: boolean;
@@ -198,7 +199,7 @@ export default function Dashboard() {
   }, [terminalesState.data]);
 
   return (
-    <div className="container-fluid p-4 d-flex flex-column gap-4">
+    <div className="dashboard-page container-fluid p-4 d-flex flex-column gap-4">
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h1 className="h4 mb-0">Dashboard de estadísticas</h1>
         <button type="button" className="btn btn-outline-primary" onClick={() => void loadDashboard()} disabled={isRefreshing}>
