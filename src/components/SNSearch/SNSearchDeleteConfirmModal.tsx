@@ -25,10 +25,13 @@ export default function SNSearchDeleteConfirmModal({
     return null;
   }
 
+  const backdropZIndex = 2300;
+  const modalZIndex = 2310;
+
   return (
     <>
-      <div className="modal-backdrop fade show" style={{ zIndex: 1050 }} />
-      <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" style={{ zIndex: 1055 }}>
+      <div className="modal-backdrop fade show" style={{ zIndex: backdropZIndex }} />
+      <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" style={{ zIndex: modalZIndex }}>
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content border-0 shadow">
             <div className="modal-header">
