@@ -1,4 +1,4 @@
-import type { ExpeditionList, PaymentTerminal } from "../types";
+import type { ExpeditionList, Payment } from "../types";
 import type { WarehouseMapItem } from "../types/warehouseMap.types";
 import { apiRequest } from "./apiClient";
 
@@ -57,7 +57,7 @@ export async function getExpedicionesTodayList() {
 }
 
 export async function getTerminales() {
-  return apiRequest<PaymentTerminal[]>("/terminales");
+  return apiRequest<Payment[]>("/terminales");
 }
 
 export async function getCajas() {

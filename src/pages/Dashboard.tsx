@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import GridBoard, { type DashboardKpis } from "../components/dashboard/GridBoard";
 import ModelsUsageCard from "../components/dashboard/ModelsUsageCard";
 import OperationalAlertsChart from "../components/dashboard/OperationalAlertsChart";
 import RecentActivity from "../components/dashboard/RecentActivity";
 import WarehouseOccupationChart from "../components/dashboard/WarehouseOccupationChart";
-import type { ExpeditionList, PaymentTerminal } from "../types";
+import type { ExpeditionList, Payment } from "../types";
 import type { WarehouseMapItem } from "../types/warehouseMap.types";
 import {
   getCajas,
@@ -45,11 +45,11 @@ export default function Dashboard() {
   });
 
   const [mapaState, setMapaState] = useState<WidgetState<WarehouseMapItem[]>>(widgetInitial([]));
-  const [terminalesState, setTerminalesState] = useState<WidgetState<PaymentTerminal[]>>(widgetInitial([]));
+  const [terminalesState, setTerminalesState] = useState<WidgetState<Payment[]>>(widgetInitial([]));
   const [cajasState, setCajasState] = useState<WidgetState<Array<{ id: number; etiqueta: string; modeloProducto?: string | null }>>>(widgetInitial([]));
   const [expedicionesState, setExpedicionesState] = useState<WidgetState<ExpeditionList[]>>(widgetInitial([]));
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     setIsRefreshing(true);
 
     setKpis((prev) => ({
@@ -135,11 +135,17 @@ export default function Dashboard() {
     );
 
     setIsRefreshing(false);
-  };
+  }, []);
 
   useEffect(() => {
-    void loadDashboard();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      void loadDashboard();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [loadDashboard]);
 
   const ocupacion = useMemo(() => {
     const total = mapaState.data.length;
