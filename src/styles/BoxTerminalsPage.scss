@@ -116,6 +116,45 @@
   letter-spacing: 0.05em;
 }
 
+.box-terminal-state {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.35rem 0.62rem;
+}
+
+.box-terminal-state__icon {
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.box-terminal-state.is-operativo {
+  background: var(--color-success-bg);
+  color: var(--color-success-text-dark);
+}
+
+.box-terminal-state.is-pendiente-laboratorio {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text-dark);
+}
+
+.box-terminal-state.is-pendiente-revision {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.box-terminal-state.is-en-transito,
+.box-terminal-state.is-pendiente-transito,
+.box-terminal-state.is-invalid {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text-dark);
+}
+
+.box-terminal-state.is-nivel-1 {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
 :root[data-theme="dark"] .box-terminals-page .form-control,
 :root[data-theme="dark"] .box-terminals-page .form-select,
 :root[data-theme="dark"] .box-terminals-page .input-group-text {

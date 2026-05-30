@@ -27,11 +27,43 @@ type BoxTerminalRow = {
   sn: string;
   marca?: string;
   modelo?: string;
+  terminalState?: string;
   isValid: boolean;
   reason?: string;
   reasonCode?: ValidarTerminalResponse["motivo"];
   scannedAt: string;
 };
+
+type TerminalStateVisual = {
+  label: string;
+  icon: string;
+  className: string;
+};
+
+const FORBIDDEN_TERMINAL_STATES = new Set(["en_transito", "pendiente_transito", "nivel_1"]);
+
+function normalizeState(value?: string | null): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function isForbiddenTerminalState(value?: string | null): boolean {
+  return FORBIDDEN_TERMINAL_STATES.has(normalizeState(value));
+}
+
+function resolveTerminalStateVisual(row: BoxTerminalRow): TerminalStateVisual {
+  const state = normalizeState(row.terminalState);
+
+  if (state === "operativo") return { label: "Operativo", icon: "check_circle", className: "is-operativo" };
+  if (state === "pendiente_laboratorio" || state === "pendiente_lavoratorio") {
+    return { label: "Pendiente laboratorio", icon: "science", className: "is-pendiente-laboratorio" };
+  }
+  if (state === "pendiente_revision") return { label: "Pendiente revisión", icon: "manage_search", className: "is-pendiente-revision" };
+  if (state === "en_transito") return { label: "En tránsito", icon: "local_shipping", className: "is-en-transito" };
+  if (state === "pendiente_transito") return { label: "Pendiente tránsito", icon: "inventory_2", className: "is-pendiente-transito" };
+  if (state === "nivel_1") return { label: "Nivel 1", icon: "build_circle", className: "is-nivel-1" };
+  if (row.isValid) return { label: "Válido", icon: "verified", className: "is-operativo" };
+  return { label: "Inválido", icon: "error", className: "is-invalid" };
+}
 
 function nowTime(): string {
   return new Date().toLocaleTimeString("es-ES", { hour12: false });
@@ -112,7 +144,8 @@ export default function BoxTerminalsPage() {
 
   const capacidadMaxima = boxInfo.capacidadTotal;
   const hasInvalidRows = useMemo(() => rows.some((row) => !row.isValid), [rows]);
-  const canSubmit = rows.length > 0 && !hasInvalidRows && Number.isFinite(parsedBoxId);
+  const hasForbiddenStateRows = useMemo(() => rows.some((row) => isForbiddenTerminalState(row.terminalState)), [rows]);
+  const canSubmit = rows.length > 0 && !hasInvalidRows && !hasForbiddenStateRows && Number.isFinite(parsedBoxId);
 
   const loadBoxData = async (cajaId: number, options?: { preserveRows?: boolean }) => {
     const caja = await getCajaById(cajaId);
@@ -122,6 +155,7 @@ export default function BoxTerminalsPage() {
         sn: terminal.numeroSerie?.trim().toUpperCase() ?? "",
         marca: terminal.marca?.trim() ?? "",
         modelo: terminal.modelo?.trim() ?? "",
+        terminalState: terminal.estado?.trim() ?? "",
         isValid: true,
         scannedAt: "Precargado",
       }))
@@ -185,6 +219,7 @@ export default function BoxTerminalsPage() {
         sn,
         marca: response.terminal?.marca?.trim() ?? "",
         modelo: response.terminal?.modelo?.trim() ?? "",
+        terminalState: response.terminal?.estado?.trim() ?? "",
         isValid: true,
         scannedAt: nowTime(),
       };
@@ -194,6 +229,7 @@ export default function BoxTerminalsPage() {
       sn,
       marca: response.terminal?.marca?.trim() ?? "",
       modelo: response.terminal?.modelo?.trim() ?? "",
+      terminalState: response.terminal?.estado?.trim() ?? "",
       isValid: false,
       reasonCode: response.motivo,
       reason: reasonToMessage(response),
@@ -458,22 +494,33 @@ export default function BoxTerminalsPage() {
               <tbody>
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="text-center py-4 text-muted">
+                    <td colSpan={6} className="text-center py-4 text-muted">
                       Todavía no hay terminales añadidos.
                     </td>
                   </tr>
                 )}
 
                 {rows.map((row, index) => (
-                  <tr key={row.sn}>
+                  <tr key={`${row.sn}-${index}`}>
                     <td>{index + 1}</td>
                     <td className="fw-semibold">{row.sn}</td>
                     <td>{row.marca || "-"}</td>
                     <td>{row.modelo || "-"}</td>
                     <td>
-                      <span className={`badge rounded-pill ${row.isValid ? "text-bg-success" : "text-bg-danger"}`}>
-                        {row.isValid ? "Válido" : "Inválido"}
-                      </span>
+                      {(() => {
+                        const stateVisual = resolveTerminalStateVisual(row);
+                        return (
+                          <span className={`badge rounded-pill box-terminal-state ${stateVisual.className}`}>
+                            <span className="material-symbols-outlined box-terminal-state__icon" aria-hidden="true">
+                              {stateVisual.icon}
+                            </span>
+                            {stateVisual.label}
+                          </span>
+                        );
+                      })()}
+                      {isForbiddenTerminalState(row.terminalState) && (
+                        <div className="small text-danger mt-1">Este estado no se puede asignar a una caja.</div>
+                      )}
                       {!row.isValid && row.reason && <div className="small text-danger mt-1">{row.reason}</div>}
                     </td>
                     <td className="text-end">

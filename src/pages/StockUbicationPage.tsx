@@ -499,11 +499,17 @@ export default function StockUbicationPage() {
     };
   }, [mostrarFormPallet, palletActionMode]);
 
+  const closeSlotDetailModal = () => {
+    setHuecoSeleccionado(null);
+    setActionMessage(null);
+    navigate("/stock");
+  };
+
   return (
     <div className="container py-4">
       {huecoSeleccionado && (
         <>
-          <div className="modal-backdrop fade show stock-overlay-backdrop" />
+          <div className="modal-backdrop fade show stock-overlay-backdrop" onClick={closeSlotDetailModal} />
           <div className="modal fade show d-block stock-overlay-modal" role="dialog" aria-modal="true">
             <div className="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
               <div className="modal-content stock-slot-modal">
@@ -532,11 +538,7 @@ export default function StockUbicationPage() {
                 </div>
                 <button
                   className="btn-close"
-                  onClick={() => {
-                    setHuecoSeleccionado(null);
-                    setActionMessage(null);
-                    navigate("/stock");
-                  }}
+                  onClick={closeSlotDetailModal}
                 />
               </div>
 
