@@ -33,15 +33,12 @@ function TerminalEditableForm({ isCreateMode, form, currentBox, onChange }: Term
           </select>
         </div>
 
-        <div className="col-12 col-md-6">
-          <label className="form-label mb-1">Caja</label>
-          <input
-            className="form-control"
-            value={isCreateMode ? "Disponible despues de crear el terminal" : formatCurrentBox(currentBox)}
-            readOnly
-            disabled={isCreateMode}
-          />
-        </div>
+        {!isCreateMode && (
+          <div className="col-12 col-md-6">
+            <label className="form-label mb-1">Caja</label>
+            <input className="form-control" value={formatCurrentBox(currentBox)} readOnly />
+          </div>
+        )}
 
         <div className="col-12">
           <label className="form-label mb-1">Observaciones</label>

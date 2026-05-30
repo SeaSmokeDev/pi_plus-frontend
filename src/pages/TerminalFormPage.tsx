@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import TerminalFormHeader from "../components/terminal-form/TerminalFormHeader";
 import TerminalReadonlyInfo from "../components/terminal-form/TerminalReadonlyInfo";
 import TerminalEditableInfo from "../components/terminal-form/TerminalEditableForm";
-import { getTerminalBrands, getTerminalModelsByBrand } from "../services/terminalCatalogService";
+import { getTerminalBrandModels } from "../services/terminalCatalogService";
 import { createTerminal, getTerminalEditBySn, updateTerminal } from "../services/paymentService";
-import type { PaymentFormData, TerminalEdit, TerminalStatus } from "../types";
+import type { PaymentFormData, TerminalBrandModel, TerminalEdit, TerminalStatus } from "../types";
 
 type TerminalFormLocationState = {
   mode?: "create" | "edit";
@@ -29,15 +29,18 @@ function TerminalFormPage() {
 
   const [form, setForm] = useState<PaymentFormData>(initialForm);
   const [terminal, setTerminal] = useState<TerminalEdit | null>(null);
-  const [brands, setBrands] = useState<string[]>([]);
-  const [models, setModels] = useState<string[]>([]);
+  const [brandModels, setBrandModels] = useState<TerminalBrandModel[]>([]);
   const [loadingInitialData, setLoadingInitialData] = useState(!isCreateMode);
   const [loadingBrands, setLoadingBrands] = useState(false);
-  const [loadingModels, setLoadingModels] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [createdSerialNumber, setCreatedSerialNumber] = useState("");
+  const brands = useMemo(() => [...new Set(brandModels.map((item) => item.marca))], [brandModels]);
+  const models = useMemo(
+    () => brandModels.filter((item) => item.marca === form.marca).map((item) => item.modelo),
+    [brandModels, form.marca],
+  );
 
   useEffect(() => {
     return () => {
@@ -61,8 +64,8 @@ function TerminalFormPage() {
     async function loadBrands() {
       try {
         setLoadingBrands(true);
-        const data = await getTerminalBrands();
-        if (isMounted) setBrands(data);
+        const data = await getTerminalBrandModels();
+        if (isMounted) setBrandModels(data);
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "No se han podido cargar las marcas.");
       } finally {
@@ -76,33 +79,6 @@ function TerminalFormPage() {
       isMounted = false;
     };
   }, [isCreateMode]);
-
-  useEffect(() => {
-    if (!isCreateMode || !form.marca) {
-      setModels([]);
-      return;
-    }
-
-    let isMounted = true;
-
-    async function loadModels() {
-      try {
-        setLoadingModels(true);
-        const data = await getTerminalModelsByBrand(form.marca);
-        if (isMounted) setModels(data);
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "No se han podido cargar los modelos.");
-      } finally {
-        if (isMounted) setLoadingModels(false);
-      }
-    }
-
-    void loadModels();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [form.marca, isCreateMode]);
 
   useEffect(() => {
     if (isCreateMode) return;
@@ -185,8 +161,8 @@ function TerminalFormPage() {
         setCreatedSerialNumber(created.numeroSerie || "");
         setFeedback(
           created.numeroSerie
-            ? `Terminal creado correctamente. Numero de serie: ${created.numeroSerie}. Volviendo a busqueda...`
-            : "Terminal creado correctamente. El backend no ha devuelto numero de serie. Volviendo a busqueda...",
+            ? `${created.mensaje} Numero de serie: ${created.numeroSerie}. Volviendo a busqueda...`
+            : `${created.mensaje} El backend no ha devuelto numero de serie. Volviendo a busqueda...`,
         );
         scheduleSearchRedirect();
         return;
@@ -264,7 +240,7 @@ function TerminalFormPage() {
             brands={brands}
             models={models}
             loadingBrands={loadingBrands}
-            loadingModels={loadingModels}
+            loadingModels={false}
             onChange={handleChange}
           />
           <hr className="my-4" />

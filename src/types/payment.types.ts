@@ -42,6 +42,21 @@ export interface TerminalEditResponse {
   terminal: TerminalEdit;
 }
 
+export interface TerminalBrandModel {
+  marca: string;
+  modelo: string;
+}
+
+export interface TerminalBrandModelsResponse {
+  marcasModelos: TerminalBrandModel[];
+  mensaje: string;
+}
+
+export interface CreateTerminalResponse {
+  mensaje: string;
+  numeroSerie: string;
+}
+
 export interface PaymentTerminalDetail extends Payment {
   caja?: Box | null;
 }

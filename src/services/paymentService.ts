@@ -1,5 +1,6 @@
 import type {
   CreatePayment,
+  CreateTerminalResponse,
   Payment,
   PaymentApiResponse,
   TerminalEdit,
@@ -24,8 +25,8 @@ export async function getTerminalEditBySn(sn: string): Promise<TerminalEdit> {
   return data.terminal;
 }
 
-export async function createTerminal(payload: CreatePayment): Promise<Payment> {
-  const data = await apiRequest<Payment | PaymentApiResponse>("/terminales", {
+export async function createTerminal(payload: CreatePayment): Promise<CreateTerminalResponse> {
+  return apiRequest<CreateTerminalResponse>("/terminales", {
     method: "POST",
     body: JSON.stringify({
       marca: payload.marca,
@@ -34,8 +35,6 @@ export async function createTerminal(payload: CreatePayment): Promise<Payment> {
       notas: payload.notas ?? null,
     }),
   });
-
-  return extractTerminal(data);
 }
 
 export async function updateTerminal(numeroSerie: string, payload: UpdatePaymentPayload): Promise<Payment> {
