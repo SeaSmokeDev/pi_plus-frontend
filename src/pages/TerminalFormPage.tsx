@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import "../styles/TerminalFormPage.scss";
 import TerminalFormHeader from "../components/terminal-form/TerminalFormHeader";
 import TerminalReadonlyInfo from "../components/terminal-form/TerminalReadonlyInfo";
 import TerminalEditableInfo from "../components/terminal-form/TerminalEditableForm";
@@ -214,7 +215,7 @@ function TerminalFormPage() {
   }
 
   return (
-    <div className="container py-4">
+    <div className="container py-4 terminal-form-page">
       <div className="card shadow-sm">
         <TerminalFormHeader isCreateMode={isCreateMode} isSaving={saving} onSave={() => void handleSave()} />
         <div className="card-body">
