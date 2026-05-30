@@ -262,6 +262,7 @@ Entidades principales consumidas:
 - `GET /api/palets/free` (palés libres)
 - `GET /api/palets/{id}` (detalle palé)
 - `PATCH /api/palets/{id}/ubicacion` (mover/desasignar de hueco)
+- `PATCH /api/palets/{id}/descripcion` (actualizar descripción del palé)
 - `DELETE /api/palets/{id}` (borrar palé)
 
 ### Crear palé (request)
@@ -285,6 +286,22 @@ Entidades principales consumidas:
   "ubicacionAlmacenId": 4
 }
 ```
+
+### Actualizar descripción tras mover palé
+
+```json
+{
+  "descripcion": "Pasillo 2 - Estantería A - Nivel 1"
+}
+```
+
+### Flujo real en frontend (secuencial)
+
+1. `PATCH /api/palets/{id}/ubicacion`
+2. Si OK, `PATCH /api/palets/{id}/descripcion`
+3. Refresco de mapa y detalle del palé
+
+Si falla solo el paso 2, el palé se mantiene movido y se muestra warning no bloqueante.
 
 ### Desasignar palé de ubicación
 
@@ -350,6 +367,24 @@ Entidades principales consumidas:
 - `DELETE /api/cajas/{id}/terminales/{sn}`
 - `GET /api/cajas/{id}/capacidad`
 - `GET /api/cajas/{id}` (precarga datos de caja/terminales)
+
+### Estados de terminal y regla de asignación a caja
+
+Permitidos:
+
+- `operativo` (verde)
+- `pendiente_laboratorio` (naranja)
+- `pendiente_revision` (azul)
+
+No permitidos para asociar:
+
+- `en_transito` (rojo)
+- `pendiente_transito` (rojo)
+- `nivel_1` (gris)
+
+Regla UI:
+
+- El botón **Enviar** se deshabilita si existe al menos un terminal con estado no permitido.
 
 ### Validar terminal (request)
 

@@ -71,6 +71,7 @@ src/
 - Visualización de pasillos/estanterías/huecos con ocupación.
 - Modal de detalle de ubicación.
 - Gestión de palets (alta, asignación, mover, desasignar, borrar según reglas).
+- En el flujo **Mover palé**, además de cambiar ubicación se actualiza la descripción del palé con la nueva referencia del hueco destino.
 - Gestión de cajas (alta, asignación a palet, desasignación).
 - Acceso al flujo de terminales por caja.
 
