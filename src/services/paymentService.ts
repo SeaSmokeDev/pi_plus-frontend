@@ -2,6 +2,8 @@ import type {
   CreatePayment,
   Payment,
   PaymentApiResponse,
+  TerminalEdit,
+  TerminalEditResponse,
   UpdatePaymentPayload,
 } from "../types";
 import { apiRequest } from "./apiClient";
@@ -17,8 +19,9 @@ function extractTerminal(data: Payment | PaymentApiResponse): Payment {
   return data as Payment;
 }
 
-export async function getTerminalBySn(sn: string): Promise<Payment> {
-  return apiRequest<Payment>(`/terminales/sn/${encodeURIComponent(sn.trim())}`);
+export async function getTerminalEditBySn(sn: string): Promise<TerminalEdit> {
+  const data = await apiRequest<TerminalEditResponse>(`/terminales/${encodeURIComponent(sn.trim())}/edit`);
+  return data.terminal;
 }
 
 export async function createTerminal(payload: CreatePayment): Promise<Payment> {
@@ -35,8 +38,8 @@ export async function createTerminal(payload: CreatePayment): Promise<Payment> {
   return extractTerminal(data);
 }
 
-export async function updateTerminal(id: number, payload: UpdatePaymentPayload): Promise<Payment> {
-  const data = await apiRequest<Payment | PaymentApiResponse>(`/terminales/${id}`, {
+export async function updateTerminal(numeroSerie: string, payload: UpdatePaymentPayload): Promise<Payment> {
+  const data = await apiRequest<Payment | PaymentApiResponse>(`/terminales/${encodeURIComponent(numeroSerie.trim())}`, {
     method: "PUT",
     body: JSON.stringify({
       estado: payload.estado,

@@ -1,13 +1,18 @@
-import type { PaymentFormData } from "../../types";
+import type { PaymentFormData, TerminalCurrentBox } from "../../types";
 import { editableTerminalStatusOptions } from "../../types";
 
 type TerminalEditableFormProps = {
   isCreateMode: boolean;
   form: PaymentFormData;
+  currentBox?: TerminalCurrentBox | null;
   onChange: (field: keyof PaymentFormData, value: string) => void;
 };
 
-function TerminalEditableForm({ isCreateMode, form, onChange }: TerminalEditableFormProps) {
+function formatCurrentBox(box: TerminalCurrentBox | null | undefined): string {
+  return box ? `${box.etiqueta} - ${box.modeloProducto}` : "Sin caja asignada";
+}
+
+function TerminalEditableForm({ isCreateMode, form, currentBox, onChange }: TerminalEditableFormProps) {
   return (
     <div className="mb-3">
       <h2 className="h6 mb-2">Datos editables</h2>
@@ -30,11 +35,12 @@ function TerminalEditableForm({ isCreateMode, form, onChange }: TerminalEditable
 
         <div className="col-12 col-md-6">
           <label className="form-label mb-1">Caja</label>
-          <select className="form-select" value="" disabled>
-            <option value="">
-              {isCreateMode ? "Disponible despues de crear el terminal" : "Pendiente de conectar"}
-            </option>
-          </select>
+          <input
+            className="form-control"
+            value={isCreateMode ? "Disponible despues de crear el terminal" : formatCurrentBox(currentBox)}
+            readOnly
+            disabled={isCreateMode}
+          />
         </div>
 
         <div className="col-12">
@@ -42,7 +48,7 @@ function TerminalEditableForm({ isCreateMode, form, onChange }: TerminalEditable
           <textarea
             className="form-control"
             rows={4}
-            placeholder="Añade notas sobre el estado del equipo, incidencias, accesorios, etc."
+            placeholder="Anade notas sobre el estado del equipo, incidencias, accesorios, etc."
             value={form.notas}
             maxLength={250}
             onChange={(event) => onChange("notas", event.target.value)}

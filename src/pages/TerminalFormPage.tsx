@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import TerminalFormHeader from "../components/terminal-form/TerminalFormHeader";
 import TerminalReadonlyInfo from "../components/terminal-form/TerminalReadonlyInfo";
 import TerminalEditableInfo from "../components/terminal-form/TerminalEditableForm";
 import { getTerminalBrands, getTerminalModelsByBrand } from "../services/terminalCatalogService";
-import { createTerminal, getTerminalBySn, updateTerminal } from "../services/paymentService";
-import type { Payment, PaymentFormData, TerminalStatus } from "../types";
+import { createTerminal, getTerminalEditBySn, updateTerminal } from "../services/paymentService";
+import type { PaymentFormData, TerminalEdit, TerminalStatus } from "../types";
 
 type TerminalFormLocationState = {
   mode?: "create" | "edit";
@@ -18,16 +18,17 @@ const initialForm: PaymentFormData = {
   modelo: "",
   estado: "pendiente_revision",
   notas: "",
-  cajaId: null,
 };
 
 function TerminalFormPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const locationState = location.state as TerminalFormLocationState | null;
   const isCreateMode = locationState?.mode === "create";
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [form, setForm] = useState<PaymentFormData>(initialForm);
-  const [terminal, setTerminal] = useState<Payment | null>(null);
+  const [terminal, setTerminal] = useState<TerminalEdit | null>(null);
   const [brands, setBrands] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [loadingInitialData, setLoadingInitialData] = useState(!isCreateMode);
@@ -37,6 +38,20 @@ function TerminalFormPage() {
   const [feedback, setFeedback] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [createdSerialNumber, setCreatedSerialNumber] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
+    };
+  }, []);
+
+  function scheduleSearchRedirect() {
+    if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
+
+    redirectTimeoutRef.current = setTimeout(() => {
+      navigate("/search");
+    }, 2500);
+  }
 
   useEffect(() => {
     if (!isCreateMode) return;
@@ -104,7 +119,7 @@ function TerminalFormPage() {
 
       try {
         setLoadingInitialData(true);
-        const data = await getTerminalBySn(terminalSN);
+        const data = await getTerminalEditBySn(terminalSN);
 
         if (!isMounted) return;
 
@@ -114,7 +129,6 @@ function TerminalFormPage() {
           modelo: data.modelo,
           estado: data.estado === "en_transito" || data.estado === "pendiente_transito" ? "pendiente_revision" : data.estado,
           notas: data.notas || "",
-          cajaId: data.cajaId ?? null,
         });
       } catch (error) {
         if (isMounted) {
@@ -139,7 +153,10 @@ function TerminalFormPage() {
 
     setForm((prev) => ({
       ...prev,
-      [field]: field === "estado" ? (value as TerminalStatus) : value,
+      [field]:
+        field === "estado"
+          ? (value as TerminalStatus)
+          : value,
       ...(field === "marca" ? { modelo: "" } : {}),
     }));
   }
@@ -168,26 +185,36 @@ function TerminalFormPage() {
         setCreatedSerialNumber(created.numeroSerie || "");
         setFeedback(
           created.numeroSerie
-            ? `Terminal creado correctamente. Numero de serie: ${created.numeroSerie}`
-            : "Terminal creado correctamente. El backend no ha devuelto numero de serie.",
+            ? `Terminal creado correctamente. Numero de serie: ${created.numeroSerie}. Volviendo a busqueda...`
+            : "Terminal creado correctamente. El backend no ha devuelto numero de serie. Volviendo a busqueda...",
         );
+        scheduleSearchRedirect();
         return;
       }
 
-      const terminalId = terminal?.id ?? locationState?.terminalId;
+      const terminalSN = terminal?.numeroSerie ?? locationState?.terminalSN;
 
-      if (!terminalId) {
+      if (!terminalSN) {
         setErrorMessage("No se ha podido identificar el terminal para actualizar.");
         return;
       }
 
-      const updated = await updateTerminal(terminalId, {
+      const updated = await updateTerminal(terminalSN, {
         estado: form.estado,
         notas: form.notas.trim() || null,
       });
 
-      setTerminal(updated);
-      setFeedback("Terminal actualizado correctamente.");
+      setTerminal((prev) =>
+        prev
+          ? {
+              ...prev,
+              estado: updated.estado,
+              notas: updated.notas,
+            }
+          : prev,
+      );
+      setFeedback("Terminal actualizado correctamente. Volviendo a busqueda...");
+      scheduleSearchRedirect();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el terminal.");
     } finally {
@@ -241,7 +268,12 @@ function TerminalFormPage() {
             onChange={handleChange}
           />
           <hr className="my-4" />
-          <TerminalEditableInfo isCreateMode={isCreateMode} form={form} onChange={handleChange} />
+          <TerminalEditableInfo
+            isCreateMode={isCreateMode}
+            form={form}
+            currentBox={terminal?.caja ?? null}
+            onChange={handleChange}
+          />
         </div>
       </div>
     </div>

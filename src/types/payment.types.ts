@@ -21,6 +21,27 @@ export interface Payment {
   cajaId: ID | null;
 }
 
+export interface TerminalCurrentBox {
+  id: ID;
+  etiqueta: string;
+  modeloProducto: string;
+}
+
+export interface TerminalEdit {
+  id: ID;
+  numeroSerie: string;
+  marca: string;
+  modelo: string;
+  estado: TerminalStatus;
+  notas: string | null;
+  caja: TerminalCurrentBox | null;
+}
+
+export interface TerminalEditResponse {
+  mensaje: string;
+  terminal: TerminalEdit;
+}
+
 export interface PaymentTerminalDetail extends Payment {
   caja?: Box | null;
 }
@@ -65,7 +86,6 @@ export type PaymentFormData = {
   modelo: string;
   estado: TerminalStatus;
   notas: string;
-  cajaId?: ID | null;
 };
 
 export type CreatePayment = {
